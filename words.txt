@@ -1,4 +1,5 @@
 # The full list of the 12972 words recognized by the official wordle game
+# taken from https://github.com/Kinkelin/WordleCompetition/blob/main/data/official/combined_wordlist.txt 
 noles
 melas
 waist
