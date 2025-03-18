@@ -24,11 +24,20 @@ def generate_feedback(target_word, guessed_word):
                 target_char_count[guessed_word[i]] -= 1 
     return feedback
 
-def filter_words(guess: str, feedback: list[int], remaining_words: list[str]) -> list[str]:
+def filter_words(guess: str, feedback: list[int], remaining_words: list[str], eliminated_letters: set) -> list[str]:
+    # Ensure guessed word is removed from remaining words
+    if feedback == 5*[0]:
+        remaining_words = [guess]
+    # else:
+    #     remaining_words = [word for word in remaining_words if word != guess]
+
+    # Filter out words that:
+    # 1. Don't match the feedback.
+    # 2. Contain any eliminated letters.
     filtered_words = []
     for word in remaining_words:
         simulated_feedback = generate_feedback(word, guess)
-        print(simulated_feedback, "==", feedback)
-        if simulated_feedback == feedback:
+        # print(word, ":", simulated_feedback, "==", feedback)
+        if simulated_feedback == feedback and not any(letter in eliminated_letters for letter in word):
             filtered_words.append(word)
     return filtered_words
