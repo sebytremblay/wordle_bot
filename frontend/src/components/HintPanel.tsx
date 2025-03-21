@@ -104,7 +104,8 @@ const HintPanel: React.FC<HintPanelProps> = ({ gameId, onHintReceived, disabled 
                         game_won: false,
                         max_guesses: 6,
                         history: [],
-                        current_row: 0
+                        current_row: 0,
+                        candidates_remaining: response.candidates_remaining
                     }
                 });
             }

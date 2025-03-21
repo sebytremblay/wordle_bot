@@ -86,9 +86,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ state }) => {
     // Fill in the grid with guesses and their feedback
     const grid = emptyGrid.map((row, rowIndex) => {
         const guess = state.state.history[rowIndex];
-        if (!guess) return row;
+        if (!guess || !guess.guess) return row;
 
-        return Array.from(guess.guess).map((letter, colIndex) => ({
+        // Split the guess string into an array of characters
+        const letters = guess.guess.split('');
+
+        return letters.map((letter, colIndex) => ({
             letter,
             status: getFeedbackStatus(guess.feedback[colIndex])
         }));

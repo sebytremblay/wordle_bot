@@ -11,6 +11,7 @@ export interface GameStateData {
     max_guesses: number;
     history: GuessEntry[];
     current_row: number;
+    candidates_remaining: number;
 }
 
 export interface GameState {

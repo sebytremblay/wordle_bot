@@ -115,7 +115,7 @@ const HomePage: React.FC = () => {
                     onHintReceived={setGameState}
                     disabled={isGameOver}
                 />
-                <WordListCounter count={gameState.state.history.length} />
+                <WordListCounter count={gameState.state.candidates_remaining} />
             </Content>
             {isGameOver && (
                 <>
