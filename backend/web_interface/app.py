@@ -5,18 +5,11 @@ import json
 
 from wordle_game.wordle_game import WordleGame
 from wordle_game.dictionary import load_dictionary
-from wordle_game.solver import (
-    NaiveSolver,
-    GreedySolver,
-    MinimaxSolver,
-    MCTSSolver
-)
 
 app = Flask(__name__)
 
 # Global state (in a real app, use proper session management)
 GAMES: Dict[str, WordleGame] = {}
-SOLVERS: Dict[str, Any] = {}
 
 # Load dictionary
 DICTIONARY_PATH = os.path.join(
@@ -27,28 +20,6 @@ except FileNotFoundError:
     # Fallback to a small test dictionary if file not found
     WORD_LIST = ["hello", "world", "about", "above", "abuse", "actor", "acute", "admit",
                  "adopt", "adult", "after", "again", "agent", "agree", "ahead", "alarm"]
-
-
-def get_solver(solver_type: str, dictionary: list) -> Any:
-    """Get a solver instance based on the specified type."""
-    solvers = {
-        "naive": NaiveSolver,
-        "greedy": GreedySolver,
-        "minimax": MinimaxSolver,
-        "mcts": MCTSSolver
-    }
-
-    solver_class = solvers.get(solver_type.lower())
-    if not solver_class:
-        raise ValueError(f"Unknown solver type: {solver_type}")
-
-    # Handle special initialization for different solvers
-    if solver_class == MinimaxSolver:
-        return solver_class(dictionary, max_depth=3)
-    elif solver_class == MCTSSolver:
-        return solver_class(dictionary, simulations=1000)
-    else:
-        return solver_class(dictionary)
 
 
 @app.route('/newgame', methods=['POST'])
@@ -63,10 +34,10 @@ def new_game():
     game.start_new_game()
     GAMES[game_id] = game
 
-    # Create solver if requested
+    # Initialize solver if requested
     if solver_type:
         try:
-            SOLVERS[game_id] = get_solver(solver_type, WORD_LIST)
+            game.solver_manager.get_solver(solver_type)
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
 
@@ -91,12 +62,6 @@ def make_guess():
 
     try:
         feedback, is_game_over = game.submit_guess(data['guess'])
-
-        # Update solver if one exists for this game
-        solver = SOLVERS.get(game_id)
-        if solver:
-            solver.update(data['guess'], feedback)
-
         return jsonify({
             'feedback': feedback,
             'state': game.get_game_state()
@@ -107,23 +72,30 @@ def make_guess():
 
 @app.route('/hint', methods=['GET'])
 def get_hint():
-    """Get a hint from the current solver."""
+    """Get a hint from a solver."""
     game_id = request.args.get('game_id', 'default')
+    solver_type = request.args.get('solver')  # Optional parameter
 
     game = GAMES.get(game_id)
-    solver = SOLVERS.get(game_id)
-
     if not game:
         return jsonify({'error': 'Game not found'}), 404
-    if not solver:
-        return jsonify({'error': 'No solver available'}), 400
     if game.is_game_over():
         return jsonify({'error': 'Game is already over'}), 400
 
     try:
+        # Get or switch to requested solver
+        if solver_type:
+            solver = game.solver_manager.get_solver(solver_type)
+        else:
+            solver = game.solver_manager.get_active_solver()
+            if not solver:
+                # No active solver, default to naive
+                solver = game.solver_manager.get_solver('naive')
+
         hint = solver.select_guess()
         return jsonify({
             'hint': hint,
+            'solver_type': solver.solver_type,
             'candidates_remaining': solver.get_candidate_count()
         })
     except Exception as e:

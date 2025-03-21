@@ -14,6 +14,11 @@ class BaseSolver(ABC):
         self.dictionary = dictionary_words
         self.candidate_words = dictionary_words.copy()
 
+    @property
+    def solver_type(self) -> str:
+        """Get the type of this solver."""
+        return self.__class__.__name__.lower().replace('solver', '')
+
     def initialize(self, candidate_words: Optional[List[str]] = None) -> None:
         """Initialize or reset the solver's candidate word list.
 

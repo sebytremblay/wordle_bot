@@ -1,6 +1,7 @@
 from typing import List, Tuple, Optional
 import random
 from .feedback import compute_feedback, filter_candidates
+from .solver_manager import SolverManager
 
 
 class WordleGame:
@@ -18,6 +19,7 @@ class WordleGame:
         self.guess_count: int = 0
         self.history: List[Tuple[str, Tuple[int, ...]]] = []
         self.game_won: bool = False
+        self.solver_manager = SolverManager(dictionary_words)
 
     def start_new_game(self) -> None:
         """Start a new game by selecting a random target word."""
@@ -26,6 +28,7 @@ class WordleGame:
         self.guess_count = 0
         self.history = []
         self.game_won = False
+        self.solver_manager = SolverManager(self.dictionary)
 
     def submit_guess(self, guess: str) -> Tuple[Tuple[int, ...], bool]:
         """Submit a guess and get feedback.
@@ -52,6 +55,9 @@ class WordleGame:
         self.candidate_words = filter_candidates(
             self.candidate_words, guess, feedback)
 
+        # Update all solvers with the new feedback
+        self.solver_manager.update_all(guess, feedback)
+
         # Check if game is won
         self.game_won = (guess == self.target_word)
 
@@ -67,6 +73,7 @@ class WordleGame:
         Returns:
             Dictionary containing game state information
         """
+        active_solver = self.solver_manager.get_active_solver()
         return {
             "guesses_made": self.guess_count,
             "max_guesses": self.max_guesses,
@@ -74,7 +81,8 @@ class WordleGame:
             "history": self.history,
             "game_over": self.is_game_over(),
             "game_won": self.game_won,
-            "candidates_remaining": len(self.candidate_words)
+            "candidates_remaining": len(self.candidate_words),
+            "active_solver": active_solver.solver_type if active_solver else None
         }
 
     def _is_valid_guess(self, guess: str) -> bool:
