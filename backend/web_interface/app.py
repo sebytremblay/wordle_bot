@@ -1,4 +1,6 @@
+import uuid
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from typing import Dict, Any, Optional
 import os
 import json
@@ -7,6 +9,13 @@ from wordle_game.wordle_game import WordleGame
 from wordle_game.dictionary import load_dictionary
 
 app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:3000"],  # React development server
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Global state (in a real app, use proper session management)
 GAMES: Dict[str, WordleGame] = {}
@@ -26,7 +35,7 @@ except FileNotFoundError:
 def new_game():
     """Start a new game with optional solver selection."""
     data = request.get_json() or {}
-    game_id = data.get('game_id', 'default')
+    game_id = str(uuid.uuid4())
     solver_type = data.get('solver', 'naive')
 
     # Create new game instance
