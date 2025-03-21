@@ -107,3 +107,7 @@ class WordleGame:
     def _is_valid_guess(self, guess: str) -> bool:
         """Check if a guess is valid."""
         return guess in self.dictionary
+
+    def get_remaining_candidates(self) -> List[str]:
+        """Get the list of remaining candidate words."""
+        return self.candidate_words

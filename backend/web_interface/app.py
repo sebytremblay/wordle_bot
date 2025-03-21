@@ -133,5 +133,20 @@ def list_solvers():
     })
 
 
+@app.route('/remaining-words', methods=['GET'])
+def get_remaining_words():
+    """Get the list of remaining candidate words."""
+    game_id = request.args.get('game_id', 'default')
+    game = GAMES.get(game_id)
+    if not game:
+        return jsonify({'error': 'Game not found'}), 404
+
+    remaining_words = game.get_remaining_candidates()
+    return jsonify({
+        'words': remaining_words,
+        'count': len(remaining_words)
+    })
+
+
 if __name__ == '__main__':
     app.run(debug=True)

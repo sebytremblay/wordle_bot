@@ -114,7 +114,10 @@ const HomePage: React.FC = () => {
                     gameId={gameState.game_id}
                     disabled={isGameOver}
                 />
-                <WordListCounter count={gameState.state.candidates_remaining} />
+                <WordListCounter
+                    count={gameState.state.candidates_remaining}
+                    gameId={gameState.game_id}
+                />
             </Content>
             {isGameOver && (
                 <>
