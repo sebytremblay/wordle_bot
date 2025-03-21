@@ -67,7 +67,6 @@ const HintPanel: React.FC<HintPanelProps> = ({ gameId, disabled }) => {
     const [solvers, setSolvers] = useState<SolverInfo[]>([]);
     const [selectedSolver, setSelectedSolver] = useState('');
     const [hint, setHint] = useState<string | null>(null);
-    const [candidatesCount, setCandidatesCount] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -93,7 +92,6 @@ const HintPanel: React.FC<HintPanelProps> = ({ gameId, disabled }) => {
         try {
             const response = await getHint(gameId, selectedSolver);
             setHint(response.hint);
-            setCandidatesCount(response.candidates_remaining);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to get hint');
         } finally {
@@ -126,9 +124,6 @@ const HintPanel: React.FC<HintPanelProps> = ({ gameId, disabled }) => {
             {hint && (
                 <HintDisplay>
                     Suggested word: <strong>{hint.toUpperCase()}</strong>
-                    {candidatesCount !== null && (
-                        <div>Remaining possible words: {candidatesCount}</div>
-                    )}
                 </HintDisplay>
             )}
 

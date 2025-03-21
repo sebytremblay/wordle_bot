@@ -93,15 +93,12 @@ def get_hint():
 
     try:
         # Get hint using specified solver (or active/default solver)
-        hint, used_solver_type, candidates_remaining = game.get_hint(
+        hint, used_solver_type, _ = game.get_hint(
             solver_type)
-        game_state = game.get_game_state()
 
         return jsonify({
             'hint': hint,
             'solver_type': used_solver_type,
-            'candidates_remaining': candidates_remaining,
-            'state': game_state
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
