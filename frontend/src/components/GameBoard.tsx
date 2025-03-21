@@ -11,6 +11,11 @@ interface CellProps {
     status?: 'correct' | 'present' | 'absent';
 }
 
+interface ProcessedCell {
+    letter: string;
+    status: 'correct' | 'present' | 'absent';
+}
+
 const Grid = styled.div`
   display: grid;
   grid-template-rows: repeat(6, 1fr);
@@ -80,37 +85,68 @@ const getFeedbackStatus = (feedback: FeedbackType): 'correct' | 'present' | 'abs
 };
 
 const GameBoard: React.FC<GameBoardProps> = ({ state }) => {
+    console.log('GameBoard rendering with state:', state);
+    console.log('History:', state.state.history);
+
     // Create a 6x5 grid of empty cells
     const emptyGrid = Array(6).fill(null).map(() => Array(5).fill(''));
 
     // Fill in the grid with guesses and their feedback
     const grid = emptyGrid.map((row, rowIndex) => {
-        const guess = state.state.history[rowIndex];
-        if (!guess || !guess.guess) return row;
+        const guessEntry = state.state.history[rowIndex];
+        console.log(`Processing row ${rowIndex}, guess:`, guessEntry);
+
+        if (!guessEntry || !Array.isArray(guessEntry) || guessEntry.length !== 2) {
+            console.log(`No valid guess for row ${rowIndex}`);
+            return row;
+        }
+
+        const [word, feedback] = guessEntry;
+        if (!word || !feedback || !Array.isArray(feedback)) {
+            console.warn(`Row ${rowIndex} has invalid guess structure:`, guessEntry);
+            return row;
+        }
 
         // Split the guess string into an array of characters
-        const letters = guess.guess.split('');
+        const letters = word.split('');
+        console.log(`Row ${rowIndex} letters:`, letters);
+        console.log(`Row ${rowIndex} feedback:`, feedback);
 
-        return letters.map((letter, colIndex) => ({
-            letter,
-            status: getFeedbackStatus(guess.feedback[colIndex])
-        }));
+        const processedRow = letters.map((letter: string, colIndex: number) => {
+            const status = getFeedbackStatus(feedback[colIndex] as FeedbackType);
+            console.log(`Cell ${rowIndex},${colIndex}: letter=${letter}, status=${status}`);
+            return {
+                letter,
+                status
+            };
+        });
+
+        console.log(`Processed row ${rowIndex}:`, processedRow);
+        return processedRow;
     });
+
+    console.log('Final grid structure:', grid);
 
     return (
         <Grid>
-            {grid.map((row, rowIndex) => (
-                <Row key={rowIndex}>
-                    {row.map((cell: string | { letter: string; status: 'correct' | 'present' | 'absent' }, colIndex) => (
-                        <Cell
-                            key={`${rowIndex}-${colIndex}`}
-                            status={typeof cell === 'string' ? undefined : cell.status}
-                        >
-                            {typeof cell === 'string' ? '' : cell.letter}
-                        </Cell>
-                    ))}
-                </Row>
-            ))}
+            {grid.map((row, rowIndex) => {
+                console.log(`Rendering row ${rowIndex}:`, row);
+                return (
+                    <Row key={rowIndex}>
+                        {row.map((cell: string | ProcessedCell, colIndex: number) => {
+                            console.log(`Rendering cell ${rowIndex},${colIndex}:`, cell);
+                            return (
+                                <Cell
+                                    key={`${rowIndex}-${colIndex}`}
+                                    status={typeof cell === 'string' ? undefined : cell.status}
+                                >
+                                    {typeof cell === 'string' ? '' : cell.letter}
+                                </Cell>
+                            );
+                        })}
+                    </Row>
+                );
+            })}
         </Grid>
     );
 };
