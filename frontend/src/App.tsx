@@ -1,32 +1,28 @@
 import React from 'react';
-import { ThemeProvider } from 'styled-components';
-import { theme } from './theme';
+import { Global, css } from '@emotion/react';
 import HomePage from './pages/HomePage';
-import ErrorBoundary from './components/ErrorBoundary';
-import { createGlobalStyle } from 'styled-components';
 
-const GlobalStyles = createGlobalStyle`
-    body {
-        margin: 0;
-        font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-
+const globalStyles = css`
     * {
+        margin: 0;
+        padding: 0;
         box-sizing: border-box;
-    }
+    },
+    'html, body': {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #ffffff;
+        color: #1a1a1b;
+    },
+    'button, input, select': {
+        font-family: inherit;
+    },
 `;
 
-const App = () => {
-    return (
-        <ThemeProvider theme={theme}>
-            <GlobalStyles />
-            <ErrorBoundary>
-                <HomePage />
-            </ErrorBoundary>
-        </ThemeProvider>
-    );
-};
+const App: React.FC = () => (
+    <>
+        <Global styles={globalStyles} />
+        <HomePage />
+    </>
+);
 
 export default App; 

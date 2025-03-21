@@ -1,143 +1,152 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import { getHint, getSolvers } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import styled from '@emotion/styled';
+import { GameState } from '../types/game';
 import { SolverInfo } from '../types/hint';
-import { HintPanelProps } from 'types/components';
-import { logger } from '../utils/logger';
+import { getHint, getSolvers } from '../services/api';
+
+interface HintPanelProps {
+    gameId: string;
+    onHintReceived?: (state: GameState) => void;
+    disabled?: boolean;
+}
 
 const Panel = styled.div`
-    padding: 20px;
-    background-color: #f5f5f5;
-    border-radius: 8px;
-    margin-top: 20px;
+  max-width: 350px;
+  margin: 20px auto;
+  padding: 15px;
+  border: 2px solid #d3d6da;
+  border-radius: 4px;
 `;
 
-const Title = styled.h3`
-    margin: 0 0 15px 0;
-    color: #333;
+const Select = styled.select`
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  border: 1px solid #d3d6da;
+  border-radius: 4px;
+  &:disabled {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+  }
 `;
 
-const HintButton = styled.button`
-    width: 100%;
-    padding: 10px 20px;
-    font-size: 1.2rem;
-    background-color: ${props => props.theme.colors.secondary};
-    color: ${props => props.theme.colors.white};
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-bottom: 10px;
-
-    &:hover:not(:disabled) {
-        filter: brightness(0.9);
-    }
-
-    &:disabled {
-        background-color: ${props => props.theme.colors.gray};
-        cursor: not-allowed;
-    }
+const Button = styled.button`
+  width: 100%;
+  padding: 10px;
+  font-size: 1.2rem;
+  background-color: #538d4e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  &:hover:not(:disabled) {
+    background-color: #3a6b37;
+  }
 `;
 
-const HintText = styled.div`
-    text-align: center;
-    margin: 10px 0;
-    padding: 10px;
-    background-color: ${props => props.theme.colors.border};
-    border-radius: 4px;
-    font-size: 1.2rem;
+const HintDisplay = styled.div`
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  text-align: center;
 `;
 
-const ErrorText = styled.div`
-    color: ${props => props.theme.colors.error};
-    text-align: center;
-    margin-top: 10px;
-    font-size: 1rem;
+const ErrorMessage = styled.div`
+  color: red;
+  margin-top: 10px;
+  text-align: center;
 `;
 
-const SolverSelect = styled.select`
-    width: 100%;
-    padding: 10px;
-    font-size: 1.2rem;
-    border: 2px solid ${props => props.theme.colors.border};
-    border-radius: 4px;
-    margin-bottom: 10px;
-    cursor: pointer;
-
-    &:disabled {
-        background-color: ${props => props.theme.colors.gray};
-        cursor: not-allowed;
-    }
-
-    &:focus {
-        outline: none;
-        border-color: ${props => props.theme.colors.secondary};
-    }
-`;
-
-const HintPanel: React.FC<HintPanelProps> = ({ gameId, disabled }) => {
-    const [hint, setHint] = useState('');
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+const HintPanel: React.FC<HintPanelProps> = ({ gameId, onHintReceived, disabled }) => {
     const [solvers, setSolvers] = useState<SolverInfo[]>([]);
     const [selectedSolver, setSelectedSolver] = useState('');
+    const [hint, setHint] = useState<string | null>(null);
+    const [candidatesCount, setCandidatesCount] = useState<number | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    React.useEffect(() => {
-        const loadSolvers = async () => {
+    useEffect(() => {
+        const fetchSolvers = async () => {
             try {
                 const response = await getSolvers();
                 setSolvers(response.solvers);
-                if (response.solvers.length > 0) {
-                    setSelectedSolver(response.solvers[0].id);
-                }
+                setSelectedSolver(response.solvers[0]?.id || '');
             } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Failed to load solvers';
-                setError(errorMessage);
-                logger.error('HintPanel', 'Error loading solvers:', err);
+                setError('Failed to load solvers');
             }
         };
 
-        loadSolvers();
+        fetchSolvers();
     }, []);
 
-    const handleGetHint = async () => {
-        setIsLoading(true);
-        setError('');
+    const requestHint = async () => {
+        if (!selectedSolver) return;
 
+        setLoading(true);
+        setError(null);
         try {
             const response = await getHint(gameId, selectedSolver);
             setHint(response.hint);
-            logger.debug('HintPanel', 'Hint received:', response);
+            setCandidatesCount(response.candidates_remaining);
+            if (onHintReceived) {
+                onHintReceived({
+                    game_id: gameId,
+                    state: {
+                        game_over: false,
+                        game_won: false,
+                        max_guesses: 6,
+                        history: [],
+                        current_row: 0
+                    }
+                });
+            }
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to get hint';
-            setError(errorMessage);
-            logger.error('HintPanel', 'Error getting hint:', err);
+            setError(err instanceof Error ? err.message : 'Failed to get hint');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     return (
         <Panel>
-            <Title>Hint Panel</Title>
-            <SolverSelect
+            <Select
                 value={selectedSolver}
                 onChange={(e) => setSelectedSolver(e.target.value)}
-                disabled={disabled || isLoading}
+                disabled={disabled || loading}
             >
-                {solvers.map(solver => (
+                <option value="">Select a solver</option>
+                {solvers.map((solver) => (
                     <option key={solver.id} value={solver.id}>
                         {solver.name}
                     </option>
                 ))}
-            </SolverSelect>
-            <HintButton
-                onClick={handleGetHint}
-                disabled={disabled || isLoading || !selectedSolver}
+            </Select>
+
+            <Button
+                onClick={requestHint}
+                disabled={disabled || loading || !selectedSolver}
             >
-                {isLoading ? 'Getting Hint...' : 'Get Hint'}
-            </HintButton>
-            {hint && <HintText>Suggested word: {hint}</HintText>}
-            {error && <ErrorText>{error}</ErrorText>}
+                {loading ? 'Getting hint...' : 'Get Hint'}
+            </Button>
+
+            {hint && (
+                <HintDisplay>
+                    Suggested word: <strong>{hint.toUpperCase()}</strong>
+                    {candidatesCount !== null && (
+                        <div>Remaining possible words: {candidatesCount}</div>
+                    )}
+                </HintDisplay>
+            )}
+
+            {error && <ErrorMessage>{error}</ErrorMessage>}
         </Panel>
     );
 };

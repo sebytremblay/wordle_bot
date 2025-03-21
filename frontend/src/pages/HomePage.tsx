@@ -1,129 +1,140 @@
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import GameBoard from '../components/GameBoard';
 import GuessInput from '../components/GuessInput';
 import HintPanel from '../components/HintPanel';
-import { startNewGame, submitGuess } from '../services/api';
+import WordListCounter from '../components/WordListCounter';
+import { startNewGame } from '../services/api';
 import { GameState } from '../types/game';
-import { logger } from '../utils/logger';
 
 const Container = styled.div`
-    max-width: 500px;
+    max-width: 800px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 1rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 `;
 
-const NewGameButton = styled.button`
-    display: block;
-    margin: 20px auto;
-    padding: 10px 20px;
-    font-size: 1.2rem;
-    background-color: ${props => props.theme.colors.primaryDark};
-    color: ${props => props.theme.colors.white};
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    &:hover {
-        background-color: ${props => props.theme.colors.primary};
-    }
-`;
-
-const GameOverMessage = styled.div<{ $won: boolean }>`
-    text-align: center;
-    margin: 20px 0;
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: ${props => props.$won ? props.theme.colors.primary : props.theme.colors.gray};
+const Content = styled.main`
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 `;
 
 const LoadingMessage = styled.div`
     text-align: center;
-    margin: 20px 0;
+    padding: 2rem;
+    color: #787c7e;
     font-size: 1.2rem;
-    color: ${props => props.theme.colors.text};
 `;
 
 const ErrorMessage = styled.div`
     text-align: center;
-    margin: 20px 0;
+    padding: 2rem;
+    color: red;
     font-size: 1.2rem;
-    color: ${props => props.theme.colors.error};
+`;
+
+const GameOverMessage = styled.div<{ $won: boolean }>`
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: ${props => props.$won ? '#6aaa64' : '#dc3545'};
+`;
+
+const NewGameButton = styled.button`
+    display: block;
+    margin: 1rem auto;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    background-color: #538d4e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    &:hover {
+        background-color: #3a6b37;
+    }
 `;
 
 const HomePage: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-
-    const initializeGame = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const response = await startNewGame();
-            logger.debug('HomePage', 'New game started:', response);
-            setGameState(response);
-        } catch (err) {
-            const error = err instanceof Error ? err.message : 'Failed to start game';
-            setError(error);
-            logger.error('HomePage', 'Error starting game:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        initializeGame();
-    }, []);
+        const initGame = async () => {
+            try {
+                const response = await startNewGame();
+                setGameState(response);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to start game');
+            }
+        };
 
-    if (loading) {
-        return (
-            <Container>
-                <Header />
-                <LoadingMessage>Loading...</LoadingMessage>
-            </Container>
-        );
-    }
+        initGame();
+    }, []);
 
     if (error) {
         return (
             <Container>
                 <Header />
                 <ErrorMessage>{error}</ErrorMessage>
-                <NewGameButton onClick={initializeGame}>Try Again</NewGameButton>
+                <Footer />
             </Container>
         );
     }
 
     if (!gameState) {
-        return null;
+        return (
+            <Container>
+                <Header />
+                <LoadingMessage>Starting new game...</LoadingMessage>
+                <Footer />
+            </Container>
+        );
     }
+
+    const isGameOver = gameState.state.game_over;
 
     return (
         <Container>
             <Header />
-            <GameBoard state={gameState} />
-            <GuessInput
-                onSubmit={async (guess: string) => {
-                    const response = await submitGuess(gameState.game_id, guess);
-                    setGameState(response);
-                }}
-                disabled={gameState.state.game_over}
-            />
-            <HintPanel
-                gameId={gameState.game_id}
-                disabled={gameState.state.game_over}
-            />
-            {gameState.state.game_over && (
+            <Content>
+                <GameBoard state={gameState} />
+                <GuessInput
+                    gameId={gameState.game_id}
+                    onGuessUpdate={setGameState}
+                    disabled={isGameOver}
+                />
+                <HintPanel
+                    gameId={gameState.game_id}
+                    onHintReceived={setGameState}
+                    disabled={isGameOver}
+                />
+                <WordListCounter count={gameState.state.history.length} />
+            </Content>
+            {isGameOver && (
                 <>
                     <GameOverMessage $won={gameState.state.game_won}>
                         {gameState.state.game_won ? 'Congratulations!' : 'Game Over!'}
                     </GameOverMessage>
-                    <NewGameButton onClick={initializeGame}>
+                    <NewGameButton onClick={async () => {
+                        try {
+                            const response = await startNewGame();
+                            setGameState(response);
+                        } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Failed to start new game');
+                        }
+                    }}>
                         New Game
                     </NewGameButton>
                 </>
             )}
+            <Footer />
         </Container>
     );
 };
