@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
-import { GameState } from '../types/game';
 import { SolverInfo } from '../types/hint';
 import { getHint, getSolvers } from '../services/api';
 
 interface HintPanelProps {
     gameId: string;
-    onHintReceived?: (state: GameState) => void;
     disabled?: boolean;
 }
 
@@ -65,7 +63,7 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
-const HintPanel: React.FC<HintPanelProps> = ({ gameId, onHintReceived, disabled }) => {
+const HintPanel: React.FC<HintPanelProps> = ({ gameId, disabled }) => {
     const [solvers, setSolvers] = useState<SolverInfo[]>([]);
     const [selectedSolver, setSelectedSolver] = useState('');
     const [hint, setHint] = useState<string | null>(null);
@@ -96,19 +94,6 @@ const HintPanel: React.FC<HintPanelProps> = ({ gameId, onHintReceived, disabled 
             const response = await getHint(gameId, selectedSolver);
             setHint(response.hint);
             setCandidatesCount(response.candidates_remaining);
-            if (onHintReceived) {
-                onHintReceived({
-                    game_id: gameId,
-                    state: {
-                        game_over: false,
-                        game_won: false,
-                        max_guesses: 6,
-                        history: [],
-                        current_row: 0,
-                        candidates_remaining: response.candidates_remaining
-                    }
-                });
-            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to get hint');
         } finally {

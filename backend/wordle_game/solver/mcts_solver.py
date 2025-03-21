@@ -49,8 +49,11 @@ class MCTSSolver(BaseSolver):
         super().__init__(dictionary_words)
         self.simulations = simulations
 
-    def select_guess(self) -> str:
+    def select_guess(self, candidates: List[str]) -> str:
         """Select a guess using Monte Carlo Tree Search.
+
+        Args:
+            candidates: List of currently valid candidate words
 
         The strategy:
         1. Build a search tree through repeated simulations
@@ -64,19 +67,16 @@ class MCTSSolver(BaseSolver):
         Returns:
             The most promising word according to MCTS
         """
-        if len(self.candidate_words) <= 2:
-            return self.candidate_words[0]
+        if len(candidates) <= 2:
+            return candidates[0]
 
         # Initialize root node
         root = MCTSNode()
-        root.untried_moves = self.candidate_words.copy()
+        root.untried_moves = candidates.copy()
 
         # Run simulations
         for _ in range(self.simulations):
             node = root
-
-            # Save game state
-            saved_candidates = self.candidate_words.copy()
 
             # Selection
             while node.untried_moves == [] and node.children:
@@ -88,22 +88,19 @@ class MCTSSolver(BaseSolver):
                 node.untried_moves.remove(guess)
 
                 # Simulate feedback
-                target = random.choice(self.candidate_words)
+                target = random.choice(candidates)
                 feedback = compute_feedback(guess, target)
 
                 # Create new node
                 node = node.add_child(guess, feedback)
 
             # Simulation
-            result = self._simulate(node)
+            result = self._simulate(node, candidates)
 
             # Backpropagation
             while node is not None:
                 node.update(result)
                 node = node.parent
-
-            # Restore game state
-            self.candidate_words = saved_candidates
 
         # Choose best move (most visited child)
         best_visits = -1
@@ -114,7 +111,7 @@ class MCTSSolver(BaseSolver):
                 best_visits = child.visits
                 best_guess = child.guess
 
-        return best_guess if best_guess else self.candidate_words[0]
+        return best_guess if best_guess else candidates[0]
 
     def _select_ucb(self, node: MCTSNode) -> MCTSNode:
         """Select a child node using UCB1."""
@@ -129,34 +126,39 @@ class MCTSSolver(BaseSolver):
 
         return best_child
 
-    def _simulate(self, node: MCTSNode) -> float:
+    def _simulate(self, node: MCTSNode, candidates: List[str]) -> float:
         """Run a random simulation from the current node.
+
+        Args:
+            node: Current node in the search tree
+            candidates: List of currently valid candidate words
 
         Returns:
             Score between 0 and 1 (1 is better)
         """
-        if not self.candidate_words:
+        if not candidates:
             return 0.0
 
-        remaining = len(self.candidate_words)
+        remaining = len(candidates)
         max_remaining = len(self.dictionary)
 
         # Score based on how much the candidate set was reduced
         # (normalized between 0 and 1, where 1 is better)
         return 1.0 - (remaining / max_remaining)
 
-    def _compute_partitions(self, guess: str) -> Dict[Tuple[int, ...], List[str]]:
+    def _compute_partitions(self, guess: str, candidates: List[str]) -> Dict[Tuple[int, ...], List[str]]:
         """Compute how a guess would partition the remaining candidates.
 
         Args:
             guess: The word to evaluate
+            candidates: List of currently valid candidate words
 
         Returns:
             Dictionary mapping feedback patterns to lists of matching words
         """
         partitions = defaultdict(list)
 
-        for word in self.candidate_words:
+        for word in candidates:
             feedback = compute_feedback(guess, word)
             partitions[feedback].append(word)
 

@@ -9,7 +9,7 @@ from .solver import (
 
 
 class SolverManager:
-    """Manages multiple solvers for a single game, including state caching."""
+    """Manages multiple solvers for a single game."""
 
     def __init__(self, dictionary_words: List[str]):
         """Initialize the solver manager.
@@ -20,8 +20,6 @@ class SolverManager:
         self.dictionary = dictionary_words
         self._solvers: Dict[str, BaseSolver] = {}
         self._active_solver: Optional[str] = None
-        # Cache of candidate words for each solver
-        self._solver_states: Dict[str, List[str]] = {}
 
     def get_solver(self, solver_type: str) -> BaseSolver:
         """Get or create a solver of the specified type.
@@ -40,28 +38,12 @@ class SolverManager:
             solver = self._create_solver(solver_class)
             self._solvers[solver_type] = solver
 
-            # Initialize solver state from cache if available
-            if solver_type in self._solver_states:
-                solver.initialize(self._solver_states[solver_type])
-
         self._active_solver = solver_type
         return self._solvers[solver_type]
 
     def get_active_solver(self) -> Optional[BaseSolver]:
         """Get the currently active solver."""
         return self._solvers.get(self._active_solver) if self._active_solver else None
-
-    def update_all(self, guess: str, feedback: Tuple[int, ...]) -> None:
-        """Update all solvers with new guess feedback.
-
-        Args:
-            guess: The word that was guessed
-            feedback: Tuple of feedback values
-        """
-        for solver in self._solvers.values():
-            solver.update(guess, feedback)
-            # Cache the updated state
-            self._solver_states[solver.solver_type] = solver.candidate_words
 
     def _get_solver_class(self, solver_type: str) -> Any:
         """Get the solver class based on type."""

@@ -92,20 +92,16 @@ def get_hint():
         return jsonify({'error': 'Game is already over'}), 400
 
     try:
-        # Get or switch to requested solver
-        if solver_type:
-            solver = game.solver_manager.get_solver(solver_type)
-        else:
-            solver = game.solver_manager.get_active_solver()
-            if not solver:
-                # No active solver, default to naive
-                solver = game.solver_manager.get_solver('naive')
+        # Get hint using specified solver (or active/default solver)
+        hint, used_solver_type, candidates_remaining = game.get_hint(
+            solver_type)
+        game_state = game.get_game_state()
 
-        hint = solver.select_guess()
         return jsonify({
             'hint': hint,
-            'solver_type': solver.solver_type,
-            'candidates_remaining': solver.get_candidate_count()
+            'solver_type': used_solver_type,
+            'candidates_remaining': candidates_remaining,
+            'state': game_state
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

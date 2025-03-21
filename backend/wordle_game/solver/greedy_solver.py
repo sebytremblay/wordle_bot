@@ -8,8 +8,11 @@ from ..feedback import compute_feedback
 class GreedySolver(BaseSolver):
     """A solver that uses information gain to select guesses."""
 
-    def select_guess(self) -> str:
+    def select_guess(self, candidates: List[str]) -> str:
         """Select a guess that maximizes expected information gain.
+
+        Args:
+            candidates: List of currently valid candidate words
 
         The strategy:
         1. For each possible guess, compute how it would partition the remaining candidates
@@ -19,38 +22,39 @@ class GreedySolver(BaseSolver):
         Returns:
             The word with highest expected information gain
         """
-        if len(self.candidate_words) <= 2:
-            return self.candidate_words[0]
+        if len(candidates) <= 2:
+            return candidates[0]
 
         best_score = float('-inf')
         best_guess = None
 
         # Consider all remaining candidates as possible guesses
-        for guess in self.candidate_words:
-            score = self._compute_expected_info_gain(guess)
+        for guess in candidates:
+            score = self._compute_expected_info_gain(guess, candidates)
             if score > best_score:
                 best_score = score
                 best_guess = guess
 
-        return best_guess if best_guess else self.candidate_words[0]
+        return best_guess if best_guess else candidates[0]
 
-    def _compute_expected_info_gain(self, guess: str) -> float:
+    def _compute_expected_info_gain(self, guess: str, candidates: List[str]) -> float:
         """Compute the expected information gain for a guess.
 
         Args:
             guess: The word to evaluate
+            candidates: List of currently valid candidate words
 
         Returns:
             Expected information gain (in bits)
         """
         # Get the current entropy (before guess)
-        initial_entropy = math.log2(len(self.candidate_words))
+        initial_entropy = math.log2(len(candidates))
 
         # Compute partitions for this guess
-        partitions = self._compute_partitions(guess)
+        partitions = self._compute_partitions(guess, candidates)
 
         # Compute expected entropy after guess
-        total_words = len(self.candidate_words)
+        total_words = len(candidates)
         expected_entropy = 0.0
 
         for feedback_pattern, words in partitions.items():
@@ -61,18 +65,19 @@ class GreedySolver(BaseSolver):
         # Information gain is reduction in entropy
         return initial_entropy - expected_entropy
 
-    def _compute_partitions(self, guess: str) -> Dict[Tuple[int, ...], List[str]]:
+    def _compute_partitions(self, guess: str, candidates: List[str]) -> Dict[Tuple[int, ...], List[str]]:
         """Compute how a guess would partition the remaining candidates.
 
         Args:
             guess: The word to evaluate
+            candidates: List of currently valid candidate words
 
         Returns:
             Dictionary mapping feedback patterns to lists of matching words
         """
         partitions = defaultdict(list)
 
-        for word in self.candidate_words:
+        for word in candidates:
             feedback = compute_feedback(guess, word)
             partitions[feedback].append(word)
 

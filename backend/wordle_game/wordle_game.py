@@ -55,13 +55,32 @@ class WordleGame:
         self.candidate_words = filter_candidates(
             self.candidate_words, guess, feedback)
 
-        # Update all solvers with the new feedback
-        self.solver_manager.update_all(guess, feedback)
-
         # Check if game is won
         self.game_won = (guess == self.target_word)
 
         return feedback, self.is_game_over()
+
+    def get_hint(self, solver_type: Optional[str] = None) -> Tuple[str, str, int]:
+        """Get a hint from the specified solver type.
+
+        Args:
+            solver_type: Optional solver type to use. If None, uses active solver.
+
+        Returns:
+            Tuple containing:
+                - The suggested word
+                - The solver type used
+                - Number of remaining candidates
+        """
+        if solver_type:
+            solver = self.solver_manager.get_solver(solver_type)
+        else:
+            solver = self.solver_manager.get_active_solver()
+            if not solver:
+                solver = self.solver_manager.get_solver('naive')
+
+        hint = solver.select_guess(self.candidate_words)
+        return hint, solver.solver_type, len(self.candidate_words)
 
     def is_game_over(self) -> bool:
         """Check if the game is over (won or max guesses reached)."""
@@ -86,5 +105,5 @@ class WordleGame:
         }
 
     def _is_valid_guess(self, guess: str) -> bool:
-        """Check if a guess is valid (5 letters and in dictionary)."""
-        return len(guess) == 5 and guess.lower() in self.dictionary
+        """Check if a guess is valid."""
+        return guess in self.dictionary

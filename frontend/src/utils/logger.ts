@@ -17,8 +17,8 @@ class Logger {
 
     constructor() {
         this.config = {
-            minLevel: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
-            enabled: process.env.NODE_ENV !== 'test',
+            minLevel: process.env.NODE_ENV === 'production' ? 'error' : 'error',
+            enabled: process.env.NODE_ENV !== 'production',
         };
     }
 

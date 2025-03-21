@@ -17,8 +17,11 @@ class MinimaxSolver(BaseSolver):
         super().__init__(dictionary_words)
         self.max_depth = max_depth
 
-    def select_guess(self) -> str:
+    def select_guess(self, candidates: List[str]) -> str:
         """Select a guess using minimax search with alpha-beta pruning.
+
+        Args:
+            candidates: List of currently valid candidate words
 
         The strategy:
         1. For each possible guess, simulate all possible feedback patterns
@@ -28,8 +31,8 @@ class MinimaxSolver(BaseSolver):
         Returns:
             The word that minimizes the worst-case scenario
         """
-        if len(self.candidate_words) <= 2:
-            return self.candidate_words[0]
+        if len(candidates) <= 2:
+            return candidates[0]
 
         best_score = float('inf')
         best_guess = None
@@ -37,16 +40,17 @@ class MinimaxSolver(BaseSolver):
         beta = float('inf')
 
         # Consider all remaining candidates as possible guesses
-        for guess in self.candidate_words:
-            score = self._minimax(guess, self.max_depth, alpha, beta)
+        for guess in candidates:
+            score = self._minimax(guess, self.max_depth,
+                                  alpha, beta, candidates)
             if score < best_score:  # We want to minimize the worst case
                 best_score = score
                 best_guess = guess
             beta = min(beta, score)
 
-        return best_guess if best_guess else self.candidate_words[0]
+        return best_guess if best_guess else candidates[0]
 
-    def _minimax(self, guess: str, depth: int, alpha: float, beta: float) -> float:
+    def _minimax(self, guess: str, depth: int, alpha: float, beta: float, candidates: List[str]) -> float:
         """Recursive minimax function with alpha-beta pruning.
 
         Args:
@@ -54,32 +58,24 @@ class MinimaxSolver(BaseSolver):
             depth: Current depth in the search tree
             alpha: Alpha value for pruning
             beta: Beta value for pruning
+            candidates: List of currently valid candidate words
 
         Returns:
             Score representing the worst-case number of remaining candidates
         """
-        if depth == 0 or len(self.candidate_words) <= 1:
-            return len(self.candidate_words)
+        if depth == 0 or len(candidates) <= 1:
+            return len(candidates)
 
         # Get partitions for this guess
-        partitions = self._compute_partitions(guess)
+        partitions = self._compute_partitions(guess, candidates)
 
         # Find the worst case (maximum remaining candidates)
         worst_case = float('-inf')
 
         for feedback_pattern, words in partitions.items():
-            # Save current state
-            saved_candidates = self.candidate_words
-
-            # Update state for this branch
-            self.candidate_words = words
-
             # Recursively evaluate this partition
-            score = self._minimax_step(depth - 1, alpha, beta)
+            score = self._minimax_step(depth - 1, alpha, beta, words)
             worst_case = max(worst_case, score)
-
-            # Restore state
-            self.candidate_words = saved_candidates
 
             # Alpha-beta pruning
             if worst_case >= beta:
@@ -88,28 +84,28 @@ class MinimaxSolver(BaseSolver):
 
         return worst_case
 
-    def _minimax_step(self, depth: int, alpha: float, beta: float) -> float:
+    def _minimax_step(self, depth: int, alpha: float, beta: float, candidates: List[str]) -> float:
         """Helper function for minimax recursion.
 
         Args:
             depth: Current depth in the search tree
             alpha: Alpha value for pruning
             beta: Beta value for pruning
+            candidates: List of currently valid candidate words
 
         Returns:
             Score for this branch
         """
-        if len(self.candidate_words) <= 2:
-            return len(self.candidate_words)
+        if len(candidates) <= 2:
+            return len(candidates)
 
         best_score = float('inf')
 
         # Only consider a subset of candidates for deeper levels to improve performance
-        candidates_to_check = self.candidate_words[:min(
-            len(self.candidate_words), 10)]
+        candidates_to_check = candidates[:min(len(candidates), 10)]
 
         for guess in candidates_to_check:
-            score = self._minimax(guess, depth, alpha, beta)
+            score = self._minimax(guess, depth, alpha, beta, candidates)
             best_score = min(best_score, score)
 
             # Alpha-beta pruning
@@ -119,18 +115,19 @@ class MinimaxSolver(BaseSolver):
 
         return best_score
 
-    def _compute_partitions(self, guess: str) -> Dict[Tuple[int, ...], List[str]]:
+    def _compute_partitions(self, guess: str, candidates: List[str]) -> Dict[Tuple[int, ...], List[str]]:
         """Compute how a guess would partition the remaining candidates.
 
         Args:
             guess: The word to evaluate
+            candidates: List of currently valid candidate words
 
         Returns:
             Dictionary mapping feedback patterns to lists of matching words
         """
         partitions = defaultdict(list)
 
-        for word in self.candidate_words:
+        for word in candidates:
             feedback = compute_feedback(guess, word)
             partitions[feedback].append(word)
 
