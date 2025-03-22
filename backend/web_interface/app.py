@@ -6,6 +6,7 @@ import os
 
 from wordle_game.wordle_game import WordleGame
 from wordle_game.dictionary import load_dictionary
+from cache_service.hint_cache import HintCache, SupabaseConnectionError, HintCacheError
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -75,9 +76,10 @@ def make_guess():
 
 @app.route('/hint', methods=['GET'])
 def get_hint():
-    """Get a hint from a solver."""
+    """Get a hint from a solver with caching support."""
     game_id = request.args.get('game_id', 'default')
-    solver_type = request.args.get('solver')  # Optional parameter
+    solver_type = request.args.get(
+        'solver', 'naive')  # Default to naive solver
 
     game = GAMES.get(game_id)
     if not game:
@@ -86,15 +88,35 @@ def get_hint():
         return jsonify({'error': 'Game is already over'}), 400
 
     try:
-        # Get hint using specified solver (or active/default solver)
-        hint, used_solver_type, _ = game.get_hint(
-            solver_type)
+        # Get current game state
+        game_state = game.get_game_state()
+
+        # Define hint computation function
+        def compute_hint():
+            hint, used_solver, _ = game.get_hint(solver_type)
+            return hint
+
+        # Try to get cached hint or compute new one
+        try:
+            hint, was_cached = HintCache.get_or_compute_hint(
+                game_state=game_state,
+                solver_type=solver_type,
+                compute_fn=compute_hint
+            )
+        except (SupabaseConnectionError, HintCacheError) as e:
+            # If caching fails, fall back to direct computation
+            app.logger.error(f"Cache error: {str(e)}")
+            hint = compute_hint()
+            was_cached = False
 
         return jsonify({
             'hint': hint,
-            'solver_type': used_solver_type,
+            'solver_type': solver_type,
+            'cached': was_cached
         })
+
     except Exception as e:
+        app.logger.error(f"Error getting hint: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
