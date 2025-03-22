@@ -1,9 +1,8 @@
 import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from typing import Dict, Any, Optional
+from typing import Dict
 import os
-import json
 
 from wordle_game.wordle_game import WordleGame
 from wordle_game.dictionary import load_dictionary
@@ -23,12 +22,7 @@ GAMES: Dict[str, WordleGame] = {}
 # Load dictionary
 DICTIONARY_PATH = os.path.join(
     os.path.dirname(__file__), '..', 'data', 'words.txt')
-try:
-    WORD_LIST = load_dictionary(DICTIONARY_PATH)
-except FileNotFoundError:
-    # Fallback to a small test dictionary if file not found
-    WORD_LIST = ["hello", "world", "about", "above", "abuse", "actor", "acute", "admit",
-                 "adopt", "adult", "after", "again", "agent", "agree", "ahead", "alarm"]
+WORD_LIST = load_dictionary(DICTIONARY_PATH)
 
 
 @app.route('/newgame', methods=['POST'])

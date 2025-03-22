@@ -110,32 +110,36 @@ const HomePage: React.FC = () => {
                     onGuessUpdate={setGameState}
                     disabled={isGameOver}
                 />
-                <HintPanel
-                    gameId={gameState.game_id}
-                    disabled={isGameOver}
-                />
-                <WordListCounter
-                    count={gameState.state.candidates_remaining}
-                    gameId={gameState.game_id}
-                />
+                {!isGameOver && (
+                    <HintPanel
+                        gameId={gameState.game_id}
+                        disabled={isGameOver}
+                    />
+                )}
+                {!isGameOver && (
+                    <WordListCounter
+                        count={gameState.state.candidates_remaining}
+                        gameId={gameState.game_id}
+                    />
+                )}
+                {isGameOver && (
+                    <>
+                        <GameOverMessage $won={gameState.state.game_won}>
+                            {gameState.state.game_won ? 'Congratulations!' : 'Game Over!'}
+                        </GameOverMessage>
+                        <NewGameButton onClick={async () => {
+                            try {
+                                const response = await startNewGame();
+                                setGameState(response);
+                            } catch (err) {
+                                setError(err instanceof Error ? err.message : 'Failed to start new game');
+                            }
+                        }}>
+                            New Game
+                        </NewGameButton>
+                    </>
+                )}
             </Content>
-            {isGameOver && (
-                <>
-                    <GameOverMessage $won={gameState.state.game_won}>
-                        {gameState.state.game_won ? 'Congratulations!' : 'Game Over!'}
-                    </GameOverMessage>
-                    <NewGameButton onClick={async () => {
-                        try {
-                            const response = await startNewGame();
-                            setGameState(response);
-                        } catch (err) {
-                            setError(err instanceof Error ? err.message : 'Failed to start new game');
-                        }
-                    }}>
-                        New Game
-                    </NewGameButton>
-                </>
-            )}
             <Footer />
         </Container>
     );

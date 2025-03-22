@@ -16,21 +16,10 @@ def load_dictionary(file_path: str) -> List[str]:
         raise FileNotFoundError(f"Dictionary file not found: {file_path}")
 
     words = []
-    ext = os.path.splitext(file_path)[1].lower()
 
-    if ext == '.json':
-        with open(file_path, 'r') as f:
-            data = json.load(f)
-            # Handle different JSON formats
-            if isinstance(data, list):
-                words = data
-            elif isinstance(data, dict) and 'words' in data:
-                words = data['words']
-            else:
-                raise ValueError("Invalid JSON dictionary format")
-    else:  # Assume text file with one word per line
-        with open(file_path, 'r') as f:
-            words = [line.strip().lower() for line in f if line.strip()]
+    # Assume text file with one word per line
+    with open(file_path, 'r') as f:
+        words = [line.strip().lower() for line in f if line.strip()]
 
     # Validate and filter words
     valid_words = [word for word in words if is_valid_word(word)]

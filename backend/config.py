@@ -25,4 +25,4 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # Solver settings
 DEFAULT_SOLVER = os.getenv('DEFAULT_SOLVER', 'naive')
-MCTS_SIMULATIONS = int(os.getenv('MCTS_SIMULATIONS', '1000'))
+MCTS_SIMULATIONS = int(os.getenv('MCTS_SIMULATIONS', '100000'))
