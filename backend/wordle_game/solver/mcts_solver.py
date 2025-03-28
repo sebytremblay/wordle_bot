@@ -1,4 +1,4 @@
-import os
+import config
 from typing import List, Dict, Tuple, Optional
 import random
 import math
@@ -40,7 +40,7 @@ class MCTSNode:
 class MCTSSolver(BaseSolver):
     """A solver that uses Monte Carlo Tree Search for probabilistic optimization."""
 
-    def __init__(self, dictionary_words: List[str], simulations: int = int(os.getenv('MCTS_SIMULATIONS', 10000))):
+    def __init__(self, dictionary_words: List[str], simulations: int = config.MCTS_SIMULATIONS):
         """Initialize the solver.
 
         Args:
