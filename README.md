@@ -15,56 +15,62 @@ An intelligent Wordle solver system that implements multiple search algorithms t
 
 ## Installation
 
+### General
+
 1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd wordle-solver
 ```
 
-2. Open backend/ directory
-```cd backend/```
+### Backend
 
-3. Create a virtual environment and activate it:
+
+1. Open backend directory
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+cd backend/
 ```
 
-4.. Install dependencies:
+2. Create a virtual environment and activate it:
+```bash
+virtualenv venv
+source venv/bin/activate
+```
+
+3.. Install dependencies:
 ```bash
 pip install -r requirements.txt
+```
+
+### Frontend
+
+1. Open frontend directory
+```bash
+cd frontend/
+```
+
+2. Install dependencies
+```bash
+npm install
 ```
 
 ## Usage
 
 ### Running the Web Server
 
+1. Start the API
 ```bash
-python -m web_interface.app
+cd backend/
+python main.py
 ```
 
-The server will start on `http://localhost:5000` by default.
-
-### API Endpoints
-
-1. Start a new game:
+2. Run the frontend
 ```bash
-curl -X POST http://localhost:5000/newgame \
-  -H "Content-Type: application/json" \
-  -d '{"solver": "naive"}'
+cd frontend/
+npm run start
 ```
 
-2. Make a guess:
-```bash
-curl -X POST http://localhost:5000/guess \
-  -H "Content-Type: application/json" \
-  -d '{"guess": "hello"}'
-```
-
-3. Get a hint:
-```bash
-curl http://localhost:5000/hint
-```
+The API server will start on `http://localhost:3001` and the web interface will run on `http://loclahost:3000` by default.
 
 ## Development
 
@@ -72,18 +78,13 @@ curl http://localhost:5000/hint
 
 1. Create a new solver class in `wordle_game/solver/` that inherits from `BaseSolver`
 2. Implement the `select_guess()` method
-3. Register the solver in `web_interface/app.py`
 
 Example:
 ```python
 from .base_solver import BaseSolver
 
-class MyNewSolver(BaseSolver):
+class MyNewSolver(BasdseSolver):
     def select_guess(self) -> str:
         # Implement your guess selection logic here
         pass
 ```
-
-## License
-
-MIT License 
