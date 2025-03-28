@@ -47,7 +47,7 @@ class MCTSSolver(BaseSolver):
             dictionary_words: List of valid 5-letter words
             simulations: Number of MCTS simulations to run (default: 100000)
         """
-        super().__init__(dictionary_words)
+        self.dictionary = dictionary_words
         self.simulations = simulations
 
     def select_guess(self, candidates: List[str]) -> str:

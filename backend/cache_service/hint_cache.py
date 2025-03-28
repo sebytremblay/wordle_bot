@@ -4,7 +4,7 @@ Hint caching service implementation using Supabase.
 
 import json
 import hashlib
-from typing import Optional, Dict, Any, Tuple
+from typing import Callable, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 
 from .supabase_client import get_supabase_client, SupabaseConnectionError
@@ -116,7 +116,7 @@ class HintCache:
     def get_or_compute_hint(
         game_state: Dict[str, Any],
         solver_type: str,
-        compute_fn: callable
+        compute_fn: Callable[[], Tuple[str, str, int]]
     ) -> Tuple[str, bool]:
         """
         Get a cached hint or compute and cache a new one.

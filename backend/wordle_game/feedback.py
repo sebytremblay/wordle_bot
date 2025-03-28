@@ -1,5 +1,6 @@
 from typing import List, Tuple
 from collections import Counter
+import config
 
 
 def compute_feedback(guess: str, target: str) -> Tuple[int, ...]:
@@ -17,11 +18,11 @@ def compute_feedback(guess: str, target: str) -> Tuple[int, ...]:
     """
     guess = guess.lower()
     target = target.lower()
-    feedback = [0] * 5
+    feedback = [0] * config.WORD_LENGTH
 
     # First pass: Mark correct positions (green)
     target_chars = list(target)
-    for i in range(5):
+    for i in range(config.WORD_LENGTH):
         if guess[i] == target_chars[i]:
             feedback[i] = 2
             target_chars[i] = None  # Mark as used
@@ -29,7 +30,7 @@ def compute_feedback(guess: str, target: str) -> Tuple[int, ...]:
     # Second pass: Mark correct letters in wrong positions (yellow)
     remaining_chars = Counter(
         char for char in target_chars if char is not None)
-    for i in range(5):
+    for i in range(config.WORD_LENGTH):
         if feedback[i] == 0 and guess[i] in remaining_chars and remaining_chars[guess[i]] > 0:
             feedback[i] = 1
             remaining_chars[guess[i]] -= 1

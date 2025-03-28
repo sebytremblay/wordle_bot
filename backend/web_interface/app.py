@@ -2,7 +2,7 @@ import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import Dict
-import os
+import config
 
 from wordle_game.wordle_game import WordleGame
 from wordle_game.dictionary import load_dictionary
@@ -21,9 +21,7 @@ CORS(app, resources={
 GAMES: Dict[str, WordleGame] = {}
 
 # Load dictionary
-DICTIONARY_PATH = os.path.join(
-    os.path.dirname(__file__), '..', 'data', 'words.txt')
-WORD_LIST = load_dictionary(DICTIONARY_PATH)
+word_list = load_dictionary(config.DICTIONARY_PATH)
 
 
 @app.route('/newgame', methods=['POST'])
@@ -31,10 +29,10 @@ def new_game():
     """Start a new game with optional solver selection."""
     data = request.get_json() or {}
     game_id = str(uuid.uuid4())
-    solver_type = data.get('solver', 'naive')
+    solver_type = data.get('solver', config.DEFAULT_SOLVER)
 
     # Create new game instance
-    game = WordleGame(WORD_LIST)
+    game = WordleGame(word_list)
     GAMES[game_id] = game
 
     # Initialize solver if requested
@@ -92,7 +90,7 @@ def get_hint():
 
         # Define hint computation function
         def compute_hint():
-            hint, used_solver, _ = game.get_hint(solver_type)
+            hint, _, _ = game.get_hint(solver_type)
             return hint
 
         # Try to get cached hint or compute new one

@@ -1,6 +1,6 @@
-from typing import List, Set
+from typing import List
 import os
-import json
+import config
 
 
 def load_dictionary(file_path: str) -> List[str]:
@@ -10,7 +10,7 @@ def load_dictionary(file_path: str) -> List[str]:
         file_path: Path to the dictionary file (txt or json)
 
     Returns:
-        List of valid 5-letter words
+        List of valid n-letter words
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Dictionary file not found: {file_path}")
@@ -31,7 +31,7 @@ def load_dictionary(file_path: str) -> List[str]:
 
 
 def is_valid_word(word: str) -> bool:
-    """Check if a word is valid for Wordle (5 letters, alphabetic).
+    """Check if a word is valid for Wordle (n letters, alphabetic).
 
     Args:
         word: Word to validate
@@ -39,7 +39,7 @@ def is_valid_word(word: str) -> bool:
     Returns:
         True if the word is valid
     """
-    return (len(word) == 5 and
+    return (len(word) == config.WORD_LENGTH and
             word.isalpha() and
             word.isascii() and
             word.islower())

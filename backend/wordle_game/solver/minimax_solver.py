@@ -14,7 +14,7 @@ class MinimaxSolver(BaseSolver):
             dictionary_words: List of valid 5-letter words
             max_depth: Maximum depth for minimax search (default: 3)
         """
-        super().__init__(dictionary_words)
+        self.dictionary_words = dictionary_words
         self.max_depth = max_depth
 
     def select_guess(self, candidates: List[str]) -> str:

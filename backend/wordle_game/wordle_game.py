@@ -9,7 +9,7 @@ class WordleGame:
         """Initialize a new Wordle game.
 
         Args:
-            dictionary_words: List of valid 5-letter words
+            dictionary_words: List of valid n-letter words
             max_guesses: Maximum number of allowed guesses (default: 6)
         """
         self.dictionary = dictionary_words
@@ -31,7 +31,7 @@ class WordleGame:
         """Submit a guess and get feedback.
 
         Args:
-            guess: A 5-letter word guess
+            guess: A n-letter word guess
 
         Returns:
             Tuple containing:
@@ -98,7 +98,7 @@ class WordleGame:
             "game_over": self.is_game_over(),
             "game_won": self.game_won,
             "candidates_remaining": len(self.candidate_words),
-            "active_solver": active_solver.solver_type if active_solver else None
+            "active_solver": active_solver.solver_type() if active_solver else None
         }
 
     def _is_valid_guess(self, guess: str) -> bool:

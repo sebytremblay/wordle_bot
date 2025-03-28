@@ -1,4 +1,6 @@
-from typing import Dict, Any, List, Tuple, Optional
+import config
+import inspect
+from typing import Dict, Any, List, Optional, Type
 from .solver import (
     BaseSolver,
     NaiveSolver,
@@ -35,7 +37,7 @@ class SolverManager:
         # Create solver if it doesn't exist
         if solver_type not in self._solvers:
             solver_class = self._get_solver_class(solver_type)
-            solver = self._create_solver(solver_class)
+            solver = SolverManager.create_solver(solver_class, self.dictionary)
             self._solvers[solver_type] = solver
 
         self._active_solver = solver_type
@@ -45,13 +47,14 @@ class SolverManager:
         """Get the currently active solver."""
         return self._solvers.get(self._active_solver) if self._active_solver else None
 
-    def _get_solver_class(self, solver_type: str) -> Any:
+    @staticmethod
+    def _get_solver_class(solver_type: str) -> Type[BaseSolver]:
         """Get the solver class based on type."""
         solvers = {
-            "naive": NaiveSolver,
-            "greedy": GreedySolver,
-            "minimax": MinimaxSolver,
-            "mcts": MCTSSolver
+            NaiveSolver.solver_type(): NaiveSolver,
+            GreedySolver.solver_type(): GreedySolver,
+            MinimaxSolver.solver_type(): MinimaxSolver,
+            MCTSSolver.solver_type(): MCTSSolver
         }
 
         solver_class = solvers.get(solver_type)
@@ -60,11 +63,12 @@ class SolverManager:
 
         return solver_class
 
-    def _create_solver(self, solver_class: Any) -> BaseSolver:
+    @staticmethod
+    def create_solver(solver_class: Type[BaseSolver], dictionary: List[str]) -> BaseSolver:
         """Create a new solver instance with appropriate parameters."""
         if solver_class == MinimaxSolver:
-            return solver_class(self.dictionary, max_depth=3)
+            return solver_class(dictionary, max_depth=3)
         elif solver_class == MCTSSolver:
-            return solver_class(self.dictionary, simulations=1000)
+            return solver_class(dictionary, simulations=config.MCTS_SIMULATIONS)
         else:
-            return solver_class(self.dictionary)
+            return solver_class()
