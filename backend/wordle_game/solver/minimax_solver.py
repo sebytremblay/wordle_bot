@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 from collections import defaultdict
 from .base_solver import BaseSolver
 from ..feedback import compute_feedback

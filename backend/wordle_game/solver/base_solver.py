@@ -29,14 +29,3 @@ class BaseSolver(ABC):
             The selected word to guess
         """
         pass
-
-    def get_candidate_count(self, candidates: List[str]) -> int:
-        """Get the number of remaining candidate words.
-
-        Args:
-            candidates: List of currently valid candidate words
-
-        Returns:
-            Number of words in the candidate set
-        """
-        return len(candidates)
