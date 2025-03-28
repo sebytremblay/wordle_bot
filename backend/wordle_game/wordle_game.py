@@ -5,7 +5,7 @@ from .solver_manager import SolverManager
 
 
 class WordleGame:
-    def __init__(self, dictionary_words: List[str], max_guesses: int = 6):
+    def __init__(self, dictionary_words: List[str], max_guesses: int = 6, target_word: str = ""):
         """Initialize a new Wordle game.
 
         Args:
@@ -14,21 +14,18 @@ class WordleGame:
         """
         self.dictionary = dictionary_words
         self.max_guesses = max_guesses
-        self.target_word: str = ""
-        self.candidate_words: List[str] = []
+
+        # Randomly generate target word if not provided
+        if target_word == "":
+            self.target_word = random.choice(self.dictionary)
+        else:
+            self.target_word = target_word
+
+        self.candidate_words: List[str] = self.dictionary.copy()
         self.guess_count: int = 0
         self.history: List[Tuple[str, Tuple[int, ...]]] = []
         self.game_won: bool = False
         self.solver_manager = SolverManager(dictionary_words)
-
-    def start_new_game(self) -> None:
-        """Start a new game by selecting a random target word."""
-        self.target_word = random.choice(self.dictionary)
-        self.candidate_words = self.dictionary.copy()
-        self.guess_count = 0
-        self.history = []
-        self.game_won = False
-        self.solver_manager = SolverManager(self.dictionary)
 
     def submit_guess(self, guess: str) -> Tuple[Tuple[int, ...], bool]:
         """Submit a guess and get feedback.

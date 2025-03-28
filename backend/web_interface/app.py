@@ -35,7 +35,6 @@ def new_game():
 
     # Create new game instance
     game = WordleGame(WORD_LIST)
-    game.start_new_game()
     GAMES[game_id] = game
 
     # Initialize solver if requested
