@@ -72,6 +72,10 @@ npm run start
 
 The API server will start on `http://localhost:3001` and the web interface will run on `http://loclahost:3000` by default.
 
+### Running Locally
+
+If you want to run the solvers locally, use [backend/playground.py](backend/playground.py) as reference for how to simulate different solvers.
+
 ## Development
 
 ### Adding a New Solver
