@@ -26,6 +26,9 @@ class WordleGame:
         self.history: List[Tuple[str, Tuple[int, ...]]] = []
         self.game_won: bool = False
         self.solver_manager = SolverManager(dictionary_words, is_wordle_list)
+        
+        # Track previous guesses to prevent repetition
+        self.previous_guesses: set[str] = set()
 
     def submit_guess(self, guess: str) -> Tuple[Tuple[int, ...], bool]:
         """Submit a guess and get feedback.
@@ -39,7 +42,7 @@ class WordleGame:
                 - Boolean indicating if the game is over
         """
         if not self._is_valid_guess(guess):
-            raise ValueError("Invalid guess")
+            raise ValueError(f"Invalid guess: {guess}")
 
         if self.is_game_over():
             raise ValueError("Game is already over")
@@ -47,10 +50,14 @@ class WordleGame:
         feedback = compute_feedback(guess, self.target_word)
         self.history.append((guess, feedback))
         self.guess_count += 1
+        
+        # Add to previous guesses set
+        self.previous_guesses.add(guess)
 
         # Update candidate words based on feedback
         self.candidate_words = filter_candidates(
             self.candidate_words, guess, feedback)
+            
 
         # Check if game is won
         self.game_won = (guess == self.target_word)
@@ -76,8 +83,25 @@ class WordleGame:
             if not solver:
                 solver = self.solver_manager.get_solver('naive')
 
+        # Get suggested guess from solver
         hint = solver.select_guess(self.candidate_words)
-        return hint, solver.solver_type, len(self.candidate_words)
+        
+        # If the hint is a word we've already guessed, find a different word
+        if hint in self.previous_guesses:
+            # Find the first unguessed word from candidates
+            for word in self.candidate_words:
+                if word not in self.previous_guesses:
+                    hint = word
+                    break
+            
+            # If all candidates have been guessed, pick any unguessed word from dictionary
+            if hint in self.previous_guesses:
+                for word in self.dictionary:
+                    if word not in self.previous_guesses:
+                        hint = word
+                        break
+        
+        return hint, solver.solver_type(), len(self.candidate_words)
 
     def is_game_over(self) -> bool:
         """Check if the game is over (won or max guesses reached)."""
@@ -98,7 +122,8 @@ class WordleGame:
             "game_over": self.is_game_over(),
             "game_won": self.game_won,
             "candidates_remaining": len(self.candidate_words),
-            "active_solver": active_solver.solver_type() if active_solver else None
+            "active_solver": active_solver.solver_type() if active_solver else None,
+            "previous_guesses": list(self.previous_guesses)
         }
 
     def _is_valid_guess(self, guess: str) -> bool:

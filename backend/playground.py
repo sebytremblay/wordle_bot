@@ -1,14 +1,16 @@
 """A playground file for testing and experimenting with the code.
 
-This file provides examples of how to use different Wordle solvers and run games locally.
-It includes examples for all available solver types and demonstrates their usage.
+Tests solvers against a list of words with no guess limit.
+Tracks if word was solved within 6 attempts, but continues until solved.
+Includes caching for GreedySolver to improve speed.
 """
 import random
-from wordle_game.solver.base_solver import BaseSolver
-import config
-
-from typing import List
 import time
+import sys
+from collections import defaultdict
+import statistics
+
+import config
 from cache_service.hint_cache import HintCache
 from wordle_game.wordle_game import WordleGame
 from wordle_game.dictionary import load_dictionary
@@ -20,91 +22,230 @@ from wordle_game.solver import (
 )
 from wordle_game.solver_manager import SolverManager
 
+MAX_GUESSES = 15
 
-def run_single_game(solver: BaseSolver, dictionary: List[str], target_word: str) -> tuple[bool, int]:
-    """Run a single Wordle game with the given solver and target word.
+# cache for greedy
+PARTITIONS_CACHE = {}
+INFO_GAIN_CACHE = {}
 
+def add_caching_to_greedy():
+    """Add caching to GreedySolver methods."""
+    # save original methods
+    GreedySolver._original_partitions = GreedySolver._compute_partitions
+    GreedySolver._original_info_gain = GreedySolver._compute_expected_info_gain
+    
+    # create cached version of partitions method
+    def cached_partitions(self, guess, candidates):
+        key = (guess, frozenset(candidates))
+        if key not in PARTITIONS_CACHE:
+            PARTITIONS_CACHE[key] = self._original_partitions(guess, candidates)
+        return PARTITIONS_CACHE[key]
+    
+    # create cached version of info gain method
+    def cached_info_gain(self, guess, candidates):
+        key = (guess, frozenset(candidates))
+        if key not in INFO_GAIN_CACHE:
+            INFO_GAIN_CACHE[key] = self._original_info_gain(guess, candidates)
+        return INFO_GAIN_CACHE[key]
+    
+    # replace methods with cached versions
+    GreedySolver._compute_partitions = cached_partitions
+    GreedySolver._compute_expected_info_gain = cached_info_gain
+
+def remove_caching_from_greedy():
+    """Remove caching from GreedySolver methods."""
+    if hasattr(GreedySolver, '_original_partitions'):
+        GreedySolver._compute_partitions = GreedySolver._original_partitions
+        GreedySolver._compute_expected_info_gain = GreedySolver._original_info_gain
+
+def run_game_no_limit(solver, dictionary, target_word, is_wordle_list=False):
+    """Run a Wordle game with no guess limit.
+    
     Args:
-        solver: A Wordle solver instance
+        solver: The solver instance
+        dictionary: The dictionary of valid words
         target_word: The target word to guess
-
+        is_wordle_list: Whether to use the official Wordle list
+        
     Returns:
-        tuple[bool, int]: (whether game was won, number of guesses used)
+        tuple: (win_within_6, total_guesses)
     """
-    game = WordleGame(dictionary.copy(), target_word=target_word)
-
-    # Define hint computation function
+    game = WordleGame(dictionary.copy(), target_word=target_word, max_guesses=MAX_GUESSES, is_wordle_list=is_wordle_list)
+    
     def compute_hint():
         hint, _, _ = game.get_hint(solver.solver_type())
         return hint
-
-    while not game.is_game_over():
-        # Get a hint from cache if exists, compute otherwise
-        guess, _ = HintCache.get_or_compute_hint(
-            game_state=game.get_game_state(),
-            solver_type=solver.solver_type(),
-            compute_fn=compute_hint
-        )
-
-        # Submit guess to game
-        game.submit_guess(guess)
-
-    return game.game_won, game.guess_count
-
-
-def demo_solver(solver_class: BaseSolver, dictionary: List[str], test_words: List[str]):
-    """Demonstrate a solver's performance on some test words.
-
-    Args:
-        solver_class: The solver class to test
-        dictionary: List of valid words
-        test_words: List of target words to test
-    """
-    solver = SolverManager.create_solver(solver_class, dictionary)
-    print(f"Solver Class Name: {solver.solver_type()}")
-
-    print(f"\nTesting {solver.solver_type()} solver:")
-    print("-" * 40)
-
+    
+    found_word = False
     total_guesses = 0
-    wins = 0
-    start_time = time.time()
+    guess_list = []
+    
+    while not found_word:
+        try:
+            # Try to use cache
+            guess, _ = HintCache.get_or_compute_hint(
+                game_state=game.get_game_state(),
+                solver_type=solver.solver_type(),
+                compute_fn=compute_hint
+            )
+            if guess not in game.candidate_words: 
+                raise Exception("Invalid guess: not in candidate words")
+        except Exception:
+            # If cache fails, compute directly
+            guess = compute_hint()
 
-    for word in test_words:
-        won, guesses = run_single_game(solver, dictionary, word)
-        wins += int(won)
-        total_guesses += guesses
-        print(
-            f"Target: {word:6} | {'Won' if won else 'Lost'} in {guesses} guesses")
+        guess_list.append(guess)
+            
+        # Submit guess
+        if total_guesses >= game.max_guesses:
+            return False, total_guesses, guess_list
+        
+        game.submit_guess(guess)
+        total_guesses += 1
+        
+        # Check if word found
+        if guess == target_word:
+            found_word = True
+    
+    # Word guessed within 6 attempts is considered a win
+    win_within_6 = (total_guesses <= 6)
+    
+    return win_within_6, total_guesses, guess_list
 
-    end_time = time.time()
-    avg_guesses = total_guesses / len(test_words)
-    win_rate = (wins / len(test_words)) * 100
+def test_solver(solver_class, dictionary, test_words, is_wordle_list=False, print_hard_words=True):
+    """Test a solver on multiple words and report results."""
+    # Add caching for GreedySolver
+    if solver_class == GreedySolver:
+        add_caching_to_greedy()
+    
+    try:
+        solver = SolverManager.create_solver(solver_class, dictionary, is_wordle_list)
+        solver_name = solver.solver_type()
+        
+        print(f"Testing {solver_name} solver...")
+        
+        total_guesses = 0
+        wins_within_6 = 0
+        guess_counts = []
+        guess_distribution = defaultdict(int)
+        long_guess_cases = {}
+        
+        start_time = time.time()
+        
+        # Test each word
+        for i, word in enumerate(test_words):
+            # Show progress
+            progress = i / len(test_words) * 100
+            sys.stdout.write(f"\r{progress:.1f}% complete...")
+            sys.stdout.flush()
+            
+            try:
+                win_within_6, guesses, guess_list = run_game_no_limit(solver, dictionary, word, is_wordle_list)
+                wins_within_6 += int(win_within_6)
+                total_guesses += guesses
+                guess_counts.append(guesses)
+                guess_distribution[guesses] += 1
+                if guesses > 10:
+                    long_guess_cases[word] = guess_list
+            except Exception as e:
+                print(f"\nError on word '{word}': {str(e)}")
+                continue
+        
+        end_time = time.time()
+        
+        win_rate = (wins_within_6 / len(test_words)) * 100
+        avg_guesses = total_guesses / len(guess_counts) if guess_counts else 0
+        median_guesses = statistics.median(guess_counts) if guess_counts else 0
+        time_taken = end_time - start_time
+        
+        print("\nResults:")
+        print(f"Win rate (6 guesses or less): {win_rate:.1f}%")
+        print(f"Average guesses needed: {avg_guesses:.2f}")
+        print(f"Median guesses needed: {median_guesses}")
+        print(f"Time taken: {time_taken:.2f} seconds")
+        
+        print("\nGuess Distribution:")
+        for guesses, count in sorted(guess_distribution.items()):
+            percentage = (count / len(guess_counts)) * 100
+            if guesses >= MAX_GUESSES:
+                print(f">={guesses}: {count} ({percentage:.1f}%)")
+            else:
+                print(f"{guesses}: {count} ({percentage:.1f}%)")
+        
+        if print_hard_words and long_guess_cases:
+            print("\nWords that took more than 10 guesses:")
+            for word, guesses in long_guess_cases.items():
+                print(f"{word}: {guesses}")
 
-    print(f"\nResults:")
-    print(f"Win rate: {win_rate:.1f}%")
-    print(f"Average guesses: {avg_guesses:.2f}")
-    print(f"Time taken: {end_time - start_time:.2f} seconds")
+        return {
+            "solver": solver_name,
+            "win_rate": win_rate,
+            "avg_guesses": avg_guesses,
+            "median_guesses": median_guesses,
+            "time_taken": time_taken
+        }
+    
+    finally:
+        # Remove caching for GreedySolver
+        if solver_class == GreedySolver:
+            remove_caching_from_greedy()
 
-
-def main(num_test_words: int = 5):
-    """Main function to demonstrate different solvers."""
+def main():
+    """Main function to test and compare solvers."""
     dictionary = load_dictionary(config.DICTIONARY_PATH)
+    is_wordle_list = True
+    
+    print("How many words to test?")
+    print("1. Small sample (5 words)")
+    print("2. Medium sample (100 words)")
+    print("3. Large sample (1000 words)")
+    print("4. All words in valid wordle list")
+    print("5. All wordle answers (before NYT bought Wordle)")
+    choice = input("Enter choice (1-5): ")
+    
+    sample_size_map = {"1": 5, "2": 100, "3": 1000, "4": 0, "5": -1}
+    size = sample_size_map.get(choice, 0)
+    if size > 0:
+        test_words = random.sample(dictionary, size)
+    elif size == 0:
+        test_words = dictionary
+    else:
+        test_words = load_dictionary(config.WORDLE_ANS_PATH)
 
-    # For quick testing, we'll use a random sample
-    test_words = random.sample(dictionary, num_test_words)
-
-    # Test each solver type
-    solvers = [
-        NaiveSolver,
-        GreedySolver,
-        MinimaxSolver,
-        MCTSSolver
-    ]
-
+    print(f"Testing with {len(test_words)} words")
+    
+    print("\nWhich solvers to test?")
+    print("1. All solvers")
+    print("2. Only GreedySolver")
+    print("3. Only MinimaxSolver")
+    print("4. Only MCTSSolver")
+    print("5. Only NaiveSolver")
+    choice = input("Enter choice (1-5): ")
+    
+    solver_map = {
+        "1": [NaiveSolver, GreedySolver, MinimaxSolver, MCTSSolver],
+        "2": [GreedySolver],
+        "3": [MinimaxSolver],
+        "4": [MCTSSolver],
+        "5": [NaiveSolver]
+    }
+    
+    solvers = solver_map.get(choice, solver_map["1"])
+    results = []
     for solver_class in solvers:
-        demo_solver(solver_class, dictionary, test_words)
-
+        result = test_solver(solver_class, dictionary, test_words, is_wordle_list)
+        results.append(result)
+    
+    if len(results) > 1:
+        print("\n" + "="*60)
+        print("SOLVER COMPARISON")
+        print("="*60)
+        
+        sorted_results = sorted(results, key=lambda x: (-x["win_rate"], x["avg_guesses"]))
+        
+        print(f"{'Solver':<10} {'Win Rate (≤6)':<15} {'Avg Guesses':<15} {'Median':<10} {'Time (s)':<10}")
+        for r in sorted_results:
+            print(f"{r['solver']:<10} {r['win_rate']:.1f}%{' ':9} {r['avg_guesses']:.2f}{' ':10} {r['median_guesses']:<10} {r['time_taken']:.2f}")
 
 if __name__ == "__main__":
-    main(5)
+    main()

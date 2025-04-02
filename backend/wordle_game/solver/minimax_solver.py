@@ -14,7 +14,7 @@ class MinimaxSolver(BaseSolver):
             ordered_words: List of valid 5-letter words (ordered by heuristic to improve alpha beta pruning)
         """
         self.ordered_words = ordered_words
-        # For performance: Use ordered_words as a guide for which guesses to try first
+        # for performance: use ordered_words as a guide for which guesses to try first
 
     def select_guess(self, candidates: List[str]) -> str:
         """Select a guess using minimax search with alpha-beta pruning.
@@ -25,27 +25,15 @@ class MinimaxSolver(BaseSolver):
         Returns:
             The word that minimizes the worst-case scenario
         """
-        # handle base case -- too many candidates to process efficiently
+        # handle base case -- (assuming ordered words is in order of estimates info gain)
+        # too many candidates to process efficiently, pick best word using heuristic
         if len(candidates) > 10000:
-            # takes too long if there are too many words, so just pick based on info gain according to heuristic
             return self.ordered_words[0]
             
-        # If only a few candidates remain, prioritize candidates first as guesses
         if len(candidates) <= 2:
             return candidates[0]
             
-        # Get the guesses to try (prioritize words from ordered_words that are also in candidates)
-        guess_words = []
-        # First try words that are also potential answers
-        for word in self.ordered_words:
-            if word in candidates:
-                guess_words.append(word)
-            if len(guess_words) >= 100:  # Limit to first 100 for performance
-                break
-                
-        # If no valid guesses from ordered words in candidates, use candidates directly
-        if not guess_words:
-            guess_words = candidates[:100]  # Limit to first 100 for performance
+        guess_words = [word for word in self.ordered_words if word in candidates] or candidates
         
         return self._minimax(guess_words, candidates)
 
@@ -62,15 +50,15 @@ class MinimaxSolver(BaseSolver):
         if not candidates:
             raise ValueError("Remaining words list is empty.")
             
-        # Select the guess that minimizes the maximum number of remaining words in the worst-case scenario
-        best_score = float('inf')  # Lower score is better -> fewer words remaining
+        # pick guess that minimizes the max # of remaining words in the worst-case scenario
+        best_score = float('inf')  # lower score is better (fewer words left)
         best_guess = guess_words[0] if guess_words else candidates[0]
         
         for guess in guess_words:
             outcomes = self._get_outcomes(guess, candidates)
             worst_case = max(len(words) for words in outcomes.values())
             
-            # If this guess has a better worst-case than previous guesses
+            # if guess has a better worst-case than previous guesses
             if worst_case < best_score:
                 best_score = worst_case
                 best_guess = guess
@@ -94,7 +82,7 @@ class MinimaxSolver(BaseSolver):
         """
         outcomes = defaultdict(list)
         
-        # For each possible target word, compute the feedback and group by feedback pattern
+        # for each possible target word, compute the feedback and group by feedback pattern
         for word in remaining_words:
             feedback = compute_feedback(guess, word)
             outcomes[feedback].append(word)
