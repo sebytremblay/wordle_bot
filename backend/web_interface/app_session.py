@@ -22,7 +22,6 @@ class AppSession:
             target_word=target_word
         )
         self.solver_manager = SolverManager(dictionary_words, is_wordle_list)
-        self._active_solver_type: Optional[str] = None
 
     def submit_guess(self, guess: str) -> Tuple[Tuple[int, ...], bool]:
         """Submit a guess to the game."""
@@ -40,44 +39,22 @@ class AppSession:
                 - The solver type used
                 - Number of remaining candidates
         """
-        # Use specified solver or current active solver
-        if solver_type:
-            solver = self.solver_manager.get_solver(solver_type)
-            self._active_solver_type = solver_type
-        else:
-            solver = self.solver_manager.get_active_solver()
-            if not solver:
-                solver = self.solver_manager.get_solver('naive')
-                self._active_solver_type = 'naive'
-
         # Get current game state for solver
         candidates = self.game_state.get_remaining_candidates()
         previous_guesses = self.game_state.previous_guesses
 
-        # Get hint from solver
-        hint = solver.select_guess(candidates)
+        # Get hint from solver manager
+        hint, solver_type_used, candidates_remaining = self.solver_manager.get_hint(
+            candidates=candidates,
+            previous_guesses=previous_guesses,
+            solver_type=solver_type
+        )
 
-        # Handle case where hint has already been guessed
-        if hint in previous_guesses:
-            # Try to find unguessed word from candidates
-            for word in candidates:
-                if word not in previous_guesses:
-                    hint = word
-                    break
-
-            # If all candidates guessed, find any unguessed dictionary word
-            if hint in previous_guesses:
-                for word in self.game_state.dictionary:
-                    if word not in previous_guesses:
-                        hint = word
-                        break
-
-        return hint, solver.solver_type(), len(candidates)
+        return hint, solver_type_used, candidates_remaining
 
     def get_game_state(self) -> dict:
         """Get the current game state."""
         game_state = self.game_state.get_game_state()
-        game_state["active_solver"] = self._active_solver_type
 
         return game_state
 
