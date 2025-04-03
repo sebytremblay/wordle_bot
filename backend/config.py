@@ -9,6 +9,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 DICTIONARY_PATH = os.path.join(
     BASE_DIR, os.getenv('DICTIONARY_PATH', 'data/words.txt'))
+ORDERED_WORDS_PATH = os.path.join(
+    BASE_DIR, os.getenv('ORDERED_WORDS_PATH', 'data/ordered_words.txt'))
+WORDLE_ANS_PATH = os.path.join(
+    BASE_DIR, os.getenv('WORDLE_ANS_PATH', 'data/wordle_answers.txt'))
 
 # Game settings
 MAX_GUESSES = int(os.getenv('MAX_GUESSES', '6'))
