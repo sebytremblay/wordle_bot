@@ -1,0 +1,90 @@
+from typing import Optional, Tuple, List
+from wordle_game.wordle_game import WordleGame
+from wordle_game.solver_manager import SolverManager
+from ..config import MAX_GUESSES
+
+
+class AppSession:
+    """Manages the state of a single Wordle game session including its solvers."""
+
+    def __init__(self, dictionary_words: List[str], max_guesses: int = MAX_GUESSES, target_word: str = "", is_wordle_list: bool = False):
+        """Initialize a new game session.
+
+        Args:
+            dictionary_words: List of valid words for the game
+            max_guesses: Maximum number of allowed guesses
+            target_word: Optional specific target word
+            is_wordle_list: Whether using official Wordle word list
+        """
+        self.game_state = WordleGame(
+            dictionary_words=dictionary_words,
+            max_guesses=max_guesses,
+            target_word=target_word
+        )
+        self.solver_manager = SolverManager(dictionary_words, is_wordle_list)
+        self._active_solver_type: Optional[str] = None
+
+    def submit_guess(self, guess: str) -> Tuple[Tuple[int, ...], bool]:
+        """Submit a guess to the game."""
+        return self.game_state.submit_guess(guess)
+
+    def get_hint(self, solver_type: Optional[str] = None) -> Tuple[str, str, int]:
+        """Get a hint using the specified or active solver.
+
+        Args:
+            solver_type: Optional solver type to use. If None, uses active solver.
+
+        Returns:
+            Tuple containing:
+                - The suggested word
+                - The solver type used
+                - Number of remaining candidates
+        """
+        # Use specified solver or current active solver
+        if solver_type:
+            solver = self.solver_manager.get_solver(solver_type)
+            self._active_solver_type = solver_type
+        else:
+            solver = self.solver_manager.get_active_solver()
+            if not solver:
+                solver = self.solver_manager.get_solver('naive')
+                self._active_solver_type = 'naive'
+
+        # Get current game state for solver
+        candidates = self.game_state.get_remaining_candidates()
+        previous_guesses = self.game_state.previous_guesses
+
+        # Get hint from solver
+        hint = solver.select_guess(candidates)
+
+        # Handle case where hint has already been guessed
+        if hint in previous_guesses:
+            # Try to find unguessed word from candidates
+            for word in candidates:
+                if word not in previous_guesses:
+                    hint = word
+                    break
+
+            # If all candidates guessed, find any unguessed dictionary word
+            if hint in previous_guesses:
+                for word in self.game_state.dictionary:
+                    if word not in previous_guesses:
+                        hint = word
+                        break
+
+        return hint, solver.solver_type(), len(candidates)
+
+    def get_game_state(self) -> dict:
+        """Get the current game state."""
+        game_state = self.game_state.get_game_state()
+        game_state["active_solver"] = self._active_solver_type
+        
+        return game_state
+
+    def is_game_over(self) -> bool:
+        """Check if the game is over."""
+        return self.game_state.is_game_over()
+
+    def get_remaining_candidates(self) -> List[str]:
+        """Get remaining candidate words."""
+        return self.game_state.get_remaining_candidates()

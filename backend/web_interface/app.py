@@ -4,7 +4,7 @@ from flask_cors import CORS
 from typing import Dict
 import config
 
-from wordle_game.wordle_game import WordleGame
+from web_interface.app_session import AppSession
 from wordle_game.dictionary import load_dictionary
 from cache_service.hint_cache import HintCache, SupabaseConnectionError, HintCacheError
 
@@ -18,7 +18,7 @@ CORS(app, resources={
 })
 
 # Global state (in a real app, use proper session management)
-GAMES: Dict[str, WordleGame] = {}
+SESSIONS: Dict[str, AppSession] = {}
 
 # Load dictionary
 word_list = load_dictionary(config.DICTIONARY_PATH)
@@ -31,21 +31,21 @@ def new_game():
     game_id = str(uuid.uuid4())
     solver_type = data.get('solver', config.DEFAULT_SOLVER)
 
-    # Create new game instance
-    game = WordleGame(word_list)
-    GAMES[game_id] = game
+    # Create new game session
+    session = AppSession(word_list, is_wordle_list=True)
+    SESSIONS[game_id] = session
 
     # Initialize solver if requested
     if solver_type:
         try:
-            game.solver_manager.get_solver(solver_type)
+            session.solver_manager.get_solver(solver_type)
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
 
     return jsonify({
         'game_id': game_id,
         'solver_type': solver_type,
-        'state': game.get_game_state()
+        'state': session.get_game_state()
     })
 
 
@@ -57,15 +57,15 @@ def make_guess():
         return jsonify({'error': 'No guess provided'}), 400
 
     game_id = data.get('game_id', 'default')
-    game = GAMES.get(game_id)
-    if not game:
+    session = SESSIONS.get(game_id)
+    if not session:
         return jsonify({'error': 'Game not found'}), 404
 
     try:
-        feedback, is_game_over = game.submit_guess(data['guess'])
+        feedback, _ = session.submit_guess(data['guess'])
         return jsonify({
             'feedback': feedback,
-            'state': game.get_game_state()
+            'state': session.get_game_state()
         })
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
@@ -78,19 +78,19 @@ def get_hint():
     solver_type = request.args.get(
         'solver', 'naive')  # Default to naive solver
 
-    game = GAMES.get(game_id)
-    if not game:
+    session = SESSIONS.get(game_id)
+    if not session:
         return jsonify({'error': 'Game not found'}), 404
-    if game.is_game_over():
+    if session.is_game_over():
         return jsonify({'error': 'Game is already over'}), 400
 
     try:
         # Get current game state
-        game_state = game.get_game_state()
+        game_state = session.get_game_state()
 
         # Define hint computation function
         def compute_hint():
-            hint, _, _ = game.get_hint(solver_type)
+            hint, _, _ = session.get_hint(solver_type)
             return hint
 
         # Try to get cached hint or compute new one
@@ -150,11 +150,11 @@ def list_solvers():
 def get_remaining_words():
     """Get the list of remaining candidate words."""
     game_id = request.args.get('game_id', 'default')
-    game = GAMES.get(game_id)
-    if not game:
+    session = SESSIONS.get(game_id)
+    if not session:
         return jsonify({'error': 'Game not found'}), 404
 
-    remaining_words = game.get_remaining_candidates()
+    remaining_words = session.get_remaining_candidates()
     return jsonify({
         'words': remaining_words,
         'count': len(remaining_words)
