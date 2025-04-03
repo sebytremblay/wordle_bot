@@ -1,7 +1,7 @@
 from typing import Optional, Tuple, List
 from wordle_game.wordle_game import WordleGame
 from wordle_game.solver_manager import SolverManager
-from ..config import MAX_GUESSES
+from config import MAX_GUESSES
 
 
 class AppSession:
@@ -78,7 +78,7 @@ class AppSession:
         """Get the current game state."""
         game_state = self.game_state.get_game_state()
         game_state["active_solver"] = self._active_solver_type
-        
+
         return game_state
 
     def is_game_over(self) -> bool:

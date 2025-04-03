@@ -215,6 +215,7 @@ def main():
     print("4. All words in valid wordle list")
     print("5. All wordle answers (before NYT bought Wordle)")
     choice = input("Enter choice (1-5): ")
+    print()
 
     sample_size_map = {"1": 5, "2": 100, "3": 1000, "4": 0, "5": -1}
     size = sample_size_map.get(choice, 0)

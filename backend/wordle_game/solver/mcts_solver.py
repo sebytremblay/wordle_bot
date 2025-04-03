@@ -1,10 +1,10 @@
-import config
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Optional
 import random
 import math
-from collections import defaultdict
+
+from ..wordle_game import WordleGame
 from .base_solver import BaseSolver
-from ..feedback import compute_feedback
+import config
 
 
 class MCTSNode:
@@ -13,16 +13,15 @@ class MCTSNode:
     def __init__(self, guess: Optional[str] = None, parent: Optional['MCTSNode'] = None):
         self.guess = guess
         self.parent = parent
-        self.children: Dict[Tuple[int, ...],
-                            'MCTSNode'] = {}  # feedback -> node
+        self.children: Dict[str, 'MCTSNode'] = {}  # guess -> node
         self.visits = 0
         self.value = 0.0
         self.untried_moves: List[str] = []
 
-    def add_child(self, guess: str, feedback: Tuple[int, ...]) -> 'MCTSNode':
+    def add_child(self, guess: str) -> 'MCTSNode':
         """Add a child node with the given guess and feedback."""
         node = MCTSNode(guess=guess, parent=self)
-        self.children[feedback] = node
+        self.children[guess] = node
         return node
 
     def update(self, result: float):
@@ -45,7 +44,7 @@ class MCTSSolver(BaseSolver):
 
         Args:
             dictionary_words: List of valid 5-letter words
-            simulations: Number of MCTS simulations to run (default: 100000)
+            simulations: Number of MCTS simulations to run
         """
         self.dictionary = dictionary_words
         self.simulations = simulations
@@ -78,89 +77,64 @@ class MCTSSolver(BaseSolver):
         # Run simulations
         for _ in range(self.simulations):
             node = root
+            curr_guesses = 0
 
             # Selection
             while node.untried_moves == [] and node.children:
                 node = self._select_ucb(node)
+                curr_guesses += 1
 
             # Expansion
             if node.untried_moves:
-                guess = random.choice(node.untried_moves)
+                guess = self._rollout(node.untried_moves)
                 node.untried_moves.remove(guess)
-
-                # Simulate feedback
-                target = random.choice(candidates)
-                feedback = compute_feedback(guess, target)
-
-                # Create new node
-                node = node.add_child(guess, feedback)
+                node = node.add_child(guess)
 
             # Simulation
-            result = self._simulate(node, candidates)
+            reward = self._simulate(candidates, curr_guesses)
 
             # Backpropagation
             while node is not None:
-                node.update(result)
+                node.update(reward)
                 node = node.parent
 
         # Choose best move (most visited child)
-        best_visits = -1
-        best_guess = None
-
-        for feedback, child in root.children.items():
-            if child.visits > best_visits:
-                best_visits = child.visits
-                best_guess = child.guess
-
+        best_guess = max(root.children.items(),
+                         key=lambda child: child[1].visits)[0]
         return best_guess if best_guess else candidates[0]
 
     def _select_ucb(self, node: MCTSNode) -> MCTSNode:
         """Select a child node using UCB1."""
-        best_score = float('-inf')
-        best_child = None
+        return max(node.children.values(), key=lambda child: child.get_ucb())
 
-        for child in node.children.values():
-            score = child.get_ucb()
-            if score > best_score:
-                best_score = score
-                best_child = child
-
-        return best_child
-
-    def _simulate(self, node: MCTSNode, candidates: List[str]) -> float:
+    def _simulate(self, candidates: List[str], curr_guesses: int = 0) -> float:
         """Run a random simulation from the current node.
 
         Args:
-            node: Current node in the search tree
             candidates: List of currently valid candidate words
+            curr_guesses: Number of guesses made so far
 
         Returns:
-            Score between 0 and 1 (1 is better)
+            Score between 0 and 1
         """
         if not candidates:
             return 0.0
 
-        remaining = len(candidates)
-        max_remaining = len(self.dictionary)
+        # Prepare a simulation from this current state, setting the
+        # target word as a random sampling of the remaining guesses
+        remaining_guesses = config.MAX_GUESSES - curr_guesses
+        simulation = WordleGame(candidates, remaining_guesses, target_word="")
 
-        # Score based on how much the candidate set was reduced
-        # (normalized between 0 and 1, where 1 is better)
-        return 1.0 - (remaining / max_remaining)
+        # Run the simulation
+        while not simulation.is_game_over():
+            guess = self._rollout(simulation.candidate_words)
+            simulation.submit_guess(guess)
 
-    def _compute_partitions(self, guess: str, candidates: List[str]) -> Dict[Tuple[int, ...], List[str]]:
-        """Compute how a guess would partition the remaining candidates.
+        # Return the reward
+        reward = (1 - simulation.guess_count /
+                  simulation.max_guesses) if simulation.game_won else 0
+        return reward
 
-        Args:
-            guess: The word to evaluate
-            candidates: List of currently valid candidate words
-
-        Returns:
-            Dictionary mapping feedback patterns to lists of matching words
-        """
-        partitions = defaultdict(list)
-
-        for word in candidates:
-            feedback = compute_feedback(guess, word)
-            partitions[feedback].append(word)
-
-        return dict(partitions)
+    def _rollout(self, candidates: List[str]) -> float:
+        """Determine the best word to guess from the current state."""
+        return random.choice(candidates)
