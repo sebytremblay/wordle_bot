@@ -1,27 +1,30 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import random
 import math
 
 from ..wordle_game import WordleGame
 from .base_solver import BaseSolver
+from ..feedback import compute_feedback
 import config
 
 
 class MCTSNode:
     """Node in the Monte Carlo Tree Search."""
 
-    def __init__(self, guess: Optional[str] = None, parent: Optional['MCTSNode'] = None):
+    def __init__(self, untried_moves: List[str], guess: Optional[str] = None, parent: Optional['MCTSNode'] = None):
         self.guess = guess
         self.parent = parent
-        self.children: Dict[str, 'MCTSNode'] = {}  # guess -> node
+        self.children: Dict[Tuple[int, ...],
+                            'MCTSNode'] = {}  # feedback -> node
         self.visits = 0
         self.value = 0.0
-        self.untried_moves: List[str] = []
+        self.untried_moves: List[str] = untried_moves
 
-    def add_child(self, guess: str) -> 'MCTSNode':
-        """Add a child node with the given guess and feedback."""
-        node = MCTSNode(guess=guess, parent=self)
-        self.children[guess] = node
+    def add_child(self, feedback: Tuple[int, ...], guess: str) -> 'MCTSNode':
+        """Add a child node with the given feedback."""
+        node = MCTSNode(untried_moves=self.untried_moves,
+                        guess=guess, parent=self)
+        self.children[feedback] = node
         return node
 
     def update(self, result: float):
@@ -67,17 +70,17 @@ class MCTSSolver(BaseSolver):
         Returns:
             The most promising word according to MCTS
         """
-        if len(candidates) <= 2:
+        if len(candidates) == 1:
             return candidates[0]
 
         # Initialize root node
-        root = MCTSNode()
-        root.untried_moves = candidates.copy()
+        root = MCTSNode(untried_moves=candidates.copy())
 
         # Run simulations
         for _ in range(self.simulations):
             node = root
             curr_guesses = 0
+            target_word = random.choice(candidates)
 
             # Selection
             while node.untried_moves == [] and node.children:
@@ -88,10 +91,13 @@ class MCTSSolver(BaseSolver):
             if node.untried_moves:
                 guess = self._rollout(node.untried_moves)
                 node.untried_moves.remove(guess)
-                node = node.add_child(guess)
+
+                # Simulate feedback from new node
+                feedback = compute_feedback(guess, target_word)
+                node = node.add_child(feedback, guess)
 
             # Simulation
-            reward = self._simulate(candidates, curr_guesses)
+            reward = self._simulate(candidates, target_word, curr_guesses)
 
             # Backpropagation
             while node is not None:
@@ -107,11 +113,12 @@ class MCTSSolver(BaseSolver):
         """Select a child node using UCB1."""
         return max(node.children.values(), key=lambda child: child.get_ucb())
 
-    def _simulate(self, candidates: List[str], curr_guesses: int = 0) -> float:
+    def _simulate(self, candidates: List[str], target_word: str, curr_guesses: int = 0) -> float:
         """Run a random simulation from the current node.
 
         Args:
             candidates: List of currently valid candidate words
+            target_word: The word to be guessed
             curr_guesses: Number of guesses made so far
 
         Returns:
@@ -120,10 +127,9 @@ class MCTSSolver(BaseSolver):
         if not candidates:
             return 0.0
 
-        # Prepare a simulation from this current state, setting the
-        # target word as a random sampling of the remaining guesses
+        # Prepare a simulation from this current state
         remaining_guesses = config.MAX_GUESSES - curr_guesses
-        simulation = WordleGame(candidates, remaining_guesses, target_word="")
+        simulation = WordleGame(candidates, remaining_guesses, target_word)
 
         # Run the simulation
         while not simulation.is_game_over():
@@ -135,6 +141,82 @@ class MCTSSolver(BaseSolver):
                   simulation.max_guesses) if simulation.game_won else 0
         return reward
 
-    def _rollout(self, candidates: List[str]) -> float:
-        """Determine the best word to guess from the current state."""
-        return random.choice(candidates)
+    def _rollout(self, candidates: List[str]) -> str:
+        """Determine the best word to guess using information theory approximation.
+
+        1. Computes letter frequencies of remaining candidates
+        2. Assigns scores to each word based on unique letter coverage and position
+
+        Args:
+            candidates: List of currently valid candidate words
+
+        Returns:
+            The selected word for this rollout
+        """
+        # Fast letter frequency calculation
+        letter_freqs = {}
+        position_freqs = [{} for _ in range(5)]
+
+        # Count letter and position frequencies
+        for word in candidates:
+            for i, char in enumerate(word):
+                letter_freqs[char] = letter_freqs.get(char, 0) + 1
+                position_freqs[i][char] = position_freqs[i].get(char, 0) + 1
+
+        # Initialize best word and score
+        total_words = len(candidates)
+        best_score = -1
+        best_word = candidates[0]
+
+        # Score each word based on its information value
+        for word in self.dictionary:
+            # Skip words with repeated letters for early guesses (more efficient information gain)
+            if len(set(word)) < 4 and len(candidates) > 10:
+                continue
+
+            # Calculate word score based on letter frequencies and uniqueness
+            score = 0
+            seen_letters = set()
+
+            for i, char in enumerate(word):
+                # Skip if we've already counted this letter in this word
+                if char in seen_letters:
+                    continue
+                seen_letters.add(char)
+
+                # Letter frequency score (balance between common and rare)
+                char_freq = letter_freqs.get(
+                    char, 0) / total_words if total_words > 0 else 0
+
+                # Prefer letters that appear in ~50% of words (maximum information gain)
+                letter_info_value = 1.0 - abs(0.5 - char_freq) * 2.0
+
+                # Position frequency score to prioritize letters that appear in the same position in most words
+                pos_freq = position_freqs[i].get(
+                    char, 0) / total_words if total_words > 0 else 0
+                position_info_value = 1.0 - abs(0.5 - pos_freq) * 2.0
+
+                # Combine scores with position information weighted less
+                score += letter_info_value * 0.7 + position_info_value * 0.3
+
+            # Normalize by number of unique letters
+            score = score / max(1, len(seen_letters))
+
+            # If this word is in candidates, give it a bonus
+            if word in candidates:
+                score *= 1.2
+
+            # Update best word if we found a better score
+            if score > best_score:
+                best_score = score
+                best_word = word
+
+        # If we didn't find a good word in our dictionary subset, fall back to a candidate
+        if best_word not in self.dictionary or best_score < 0:
+            return random.choice(candidates)
+
+        return best_word
+
+    @classmethod
+    def get_name(cls) -> str:
+        return f"mcts_{config.MCTS_SIMULATIONS}"
