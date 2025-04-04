@@ -2,19 +2,43 @@ from typing import List, Dict, Tuple
 from collections import defaultdict
 from .base_solver import BaseSolver
 from ..feedback import compute_feedback
+from wordle_game.dictionary import load_dictionary
+import config
+
+class Node:
+    def __init__(self, guess: str, remaining_words: List[str]):
+        self.guess = guess
+        self.remaining_words = remaining_words
+        self.outcomes = defaultdict(list)  # child nodes grouped by feedback patterns
+        self.best_score = float('inf')  # score for pruning
+
+    def add_outcome(self, feedback: Tuple[int, ...], word: str):
+        self.outcomes[feedback].append(word)
+
+    def evaluate(self):
+        """Evaluate the worst-case outcome for this node (minimax score)"""
+        if not self.outcomes:
+            return 0  # no outcomes, no remaining words
+        
+        worst_case = max(len(words) for words in self.outcomes.values())
+        self.best_score = worst_case
+        return worst_case
 
 
 class MinimaxSolver(BaseSolver):
     """A solver that uses minimax with alpha-beta pruning to minimize worst-case scenarios."""
 
-    def __init__(self, ordered_words: List[str]):
+    def __init__(self, ordered_words: List[str], ordered_words_path=config.ORDERED_WORDS_PATH):
         """Initialize the solver.
 
         Args:
             ordered_words: List of valid 5-letter words (ordered by heuristic to improve alpha beta pruning)
+            max_depth: Maximum depth to search in the minimax tree (default: 1)
         """
-        self.ordered_words = ordered_words
-        # for performance: use ordered_words as a guide for which guesses to try first
+        self.ordered_words = load_dictionary(ordered_words_path)
+        self.max_depth = config.MINIMAX_DEPTH
+        # Cache to store evaluated positions to avoid redundant computation
+        self.cache = {}
 
     def select_guess(self, candidates: List[str]) -> str:
         """Select a guess using minimax search with alpha-beta pruning.
@@ -29,84 +53,162 @@ class MinimaxSolver(BaseSolver):
         # too many candidates to process efficiently, pick best word using heuristic
         if len(candidates) > 10000:
             return self.ordered_words[0]
-
+            
         if len(candidates) <= 2:
             return candidates[0]
 
-        guess_words = [
-            word for word in self.ordered_words if word in candidates] or candidates
+        # Clear the cache for a new search
+        self.cache = {}
+        
+        # Find words to consider as guesses - use ordered_words if available, otherwise use candidates
+        guess_words = [word for word in self.ordered_words if word in candidates] or candidates
+        
+        # Limit the number of guess words if there are too many to ensure reasonable computation time
+        if len(guess_words) > 100:
+            guess_words = guess_words[:100]
+        
+        # Find best guess using minimax search
+        best_guess, _ = self._find_best_guess(guess_words, candidates, 0)
+        return best_guess
 
-        return self._minimax(guess_words, candidates)
-
-    def _minimax(self, guess_words: List[str], candidates: List[str], prune=True, alpha=float('-inf'), beta=float('inf')):
-        """Find the best guess using minimax algorithm.
-
+    def _find_best_guess(self, guess_words: List[str], candidates: List[str], depth: int) -> Tuple[str, int]:
+        """Find the best guess and its score using minimax algorithm with specified depth.
+        
         Args:
             guess_words: List of words to consider as guesses
-            candidates: List of possible answers
-
+            candidates: List of possible target words
+            depth: Current depth in the search tree
+            
         Returns:
-            The best guess word
+            Tuple of (best guess word, worst-case score)
         """
-        if not candidates:
-            raise ValueError("Remaining words list is empty.")
+        # Create a cache key from the sorted candidates and depth
+        cache_key = (tuple(sorted(candidates)), depth)
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+            
+        # Base cases: max depth reached or very few candidates remain
+        if depth >= self.max_depth or len(candidates) <= 2:
+            best_guess = candidates[0] if len(candidates) <= 2 else self._evaluate_guesses(guess_words, candidates)
+            best_score = 1 if len(candidates) <= 1 else len(candidates)
+            self.cache[cache_key] = (best_guess, best_score)
+            return best_guess, best_score
+            
+        best_guess = None
+        best_score = float('inf')
+        
+        # For each possible guess
+        for guess in guess_words:
+            # Get all possible feedback patterns and their resulting word lists
+            outcomes = self._get_outcomes(guess, candidates)
+            
+            # If this guess perfectly splits the candidates, it's optimal
+            if all(len(words) <= 1 for words in outcomes.values()):
+                self.cache[cache_key] = (guess, 1)
+                return guess, 1
+            
+            # Find the worst-case scenario for this guess
+            worst_case_score = 0
+            
+            # Early termination if we find a worse outcome than current best
+            should_break = False
+            
+            # For each possible feedback pattern after this guess
+            for feedback, remaining_words in outcomes.items():
+                # Skip empty outcomes
+                if not remaining_words:
+                    continue
+                
+                # If only one word remains, this branch is solved
+                if len(remaining_words) == 1:
+                    outcome_score = 1
+                # If at max depth or very few words, no need to search further
+                elif depth + 1 >= self.max_depth or len(remaining_words) <= 2:
+                    outcome_score = len(remaining_words)
+                else:
+                    # Recursively find the best guess for this subset of words
+                    next_guess_words = [w for w in guess_words if w != guess] or guess_words
+                    _, outcome_score = self._find_best_guess(next_guess_words, remaining_words, depth + 1)
+                
+                # Update worst-case score for this guess
+                worst_case_score = max(worst_case_score, outcome_score)
+                
+                # Alpha-beta pruning: if this guess is already worse than our best, skip it
+                if worst_case_score >= best_score:
+                    should_break = True
+                    break
+            
+            # Skip to next guess if this one is already worse
+            if should_break:
+                continue
+                
+            # Update best guess if this one is better
+            if worst_case_score < best_score:
+                best_score = worst_case_score
+                best_guess = guess
+                
+                # If we found a perfect guess (worst case = 1), we can stop searching
+                if best_score == 1:
+                    break
+        
+        # Cache and return the result
+        self.cache[cache_key] = (best_guess, best_score)
+        return best_guess, best_score
 
-        # pick guess that minimizes the max # of remaining words in the worst-case scenario
-        best_score = float('inf')  # lower score is better (fewer words left)
-        best_guess = guess_words[0] if guess_words else candidates[0]
-
+    def _evaluate_guesses(self, guess_words: List[str], candidates: List[str]) -> str:
+        """Evaluate all guesses and return the one with the lowest worst-case score."""
+        best_guess = None
+        best_score = float('inf')
+        
         for guess in guess_words:
             outcomes = self._get_outcomes(guess, candidates)
-            worst_case = max(len(words) for words in outcomes.values())
-
-            # if guess has a better worst-case than previous guesses
+            worst_case = max(len(words) for words in outcomes.values()) if outcomes else 0
+            
             if worst_case < best_score:
                 best_score = worst_case
                 best_guess = guess
-                if prune:
-                    alpha = max(alpha, best_score)
-
-            if prune and beta <= alpha:
-                break  # prune this branch
-
+                
+                # Found a perfect guess
+                if best_score == 1:
+                    break
+        
         return best_guess
 
     def _get_outcomes(self, guess: str, remaining_words: List[str]) -> Dict[Tuple[int, ...], List[str]]:
         """Get all possible outcomes for a given guess.
-
+        
         Args:
             guess: The word to guess
             remaining_words: All possible target words
-
+            
         Returns:
             Dictionary mapping feedback patterns to lists of remaining words
         """
         outcomes = defaultdict(list)
-
+        
         # for each possible target word, compute the feedback and group by feedback pattern
         for word in remaining_words:
             feedback = compute_feedback(guess, word)
             outcomes[feedback].append(word)
 
         return outcomes
+    
+    @classmethod
+    def get_name(cls) -> str:
+        return f"minimax_{config.MINIMAX_DEPTH}"
 
     @staticmethod
     def _estimate_feedback_spread(words):
         """Ranks words with a heuristic to maximize pruning based on feedback spread.
-
+        
         Args:
             words: List of words to rank
-
+            
         Returns:
             Sorted list of words by estimated information gain
         """
         estimated_scores = {
-            word: sum(len(set(word) & set(other))
-                      for other in words) / len(words)
+            word: sum(len(set(word) & set(other)) for other in words) / len(words)
             for word in words
         }
         return sorted(words, key=lambda w: (-estimated_scores[w], -len(set(w))))
-
-    @classmethod
-    def get_name(cls) -> str:
-        return "minimax"

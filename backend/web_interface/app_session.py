@@ -21,7 +21,7 @@ class AppSession:
             max_guesses=max_guesses,
             target_word=target_word
         )
-        self.solver_manager = SolverManager(dictionary_words, is_wordle_list)
+        self.solver_manager = SolverManager(dictionary_words)
 
     def submit_guess(self, guess: str) -> Tuple[Tuple[int, ...], bool]:
         """Submit a guess to the game."""

@@ -130,8 +130,7 @@ def test_solver(solver_class: Type[BaseSolver], dictionary: List[str], test_word
         add_caching_to_greedy()
 
     try:
-        solver = SolverManager.create_solver(
-            solver_class, dictionary, is_wordle_list)
+        solver = SolverManager.create_solver(solver_class, dictionary)
         solver_name = solver.get_name()
 
         print(f"Testing {solver_name} solver...")

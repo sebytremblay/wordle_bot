@@ -14,14 +14,13 @@ from .solver import (
 class SolverManager:
     """Manages multiple solvers for a single game."""
 
-    def __init__(self, dictionary_words: List[str], is_wordle_list):
+    def __init__(self, dictionary_words: List[str]):
         """Initialize the solver manager.
 
         Args:
             dictionary_words: List of valid 5-letter words
         """
         self.dictionary = dictionary_words
-        self.is_wordle_list = is_wordle_list
         self._solvers: Dict[str, BaseSolver] = {}
         self._active_solver: Optional[BaseSolver] = None
 
@@ -39,8 +38,7 @@ class SolverManager:
         # Create solver if it doesn't exist
         if solver_type not in self._solvers:
             solver_class = self._get_solver_class(solver_type)
-            solver = SolverManager.create_solver(
-                solver_class, self.dictionary, self.is_wordle_list)
+            solver = SolverManager.create_solver(solver_class, self.dictionary)
             self._solvers[solver_type] = solver
 
         return self._solvers[solver_type]
@@ -105,15 +103,10 @@ class SolverManager:
         return solver_class
 
     @staticmethod
-    def create_solver(solver_class: Type[BaseSolver], dictionary: List[str], is_wordle_list: bool = False) -> BaseSolver:
+    def create_solver(solver_class: Type[BaseSolver], dictionary: List[str]) -> BaseSolver:
         """Create a new solver instance with appropriate parameters."""
         if solver_class == MinimaxSolver:
-            if is_wordle_list:
-                ordered_words = load_dictionary(config.ORDERED_WORDS_PATH)
-            else:
-                ordered_words = MinimaxSolver._estimate_feedback_spread(
-                    dictionary)
-            return solver_class(ordered_words)
+            return solver_class(dictionary)
         elif solver_class == MCTSSolver:
             return solver_class(dictionary, simulations=config.MCTS_SIMULATIONS)
         else:
