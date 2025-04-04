@@ -82,12 +82,11 @@ class MinimaxSolver(BaseSolver):
         Returns:
             Tuple of (best guess word, worst-case score)
         """
-        # Create a cache key from the sorted candidates and depth
         cache_key = (tuple(sorted(candidates)), depth)
         if cache_key in self.cache:
             return self.cache[cache_key]
             
-        # Base cases: max depth reached or very few candidates remain
+        # base cases: max depth reached or few candidates remain
         if depth >= self.max_depth or len(candidates) <= 2:
             best_guess = candidates[0] if len(candidates) <= 2 else self._evaluate_guesses(guess_words, candidates)
             best_score = 1 if len(candidates) <= 1 else len(candidates)
@@ -97,61 +96,47 @@ class MinimaxSolver(BaseSolver):
         best_guess = None
         best_score = float('inf')
         
-        # For each possible guess
         for guess in guess_words:
-            # Get all possible feedback patterns and their resulting word lists
             outcomes = self._get_outcomes(guess, candidates)
             
-            # If this guess perfectly splits the candidates, it's optimal
+            # perfectly splits candidates - optimal
             if all(len(words) <= 1 for words in outcomes.values()):
                 self.cache[cache_key] = (guess, 1)
                 return guess, 1
             
-            # Find the worst-case scenario for this guess
             worst_case_score = 0
+            should_prune = False
             
-            # Early termination if we find a worse outcome than current best
-            should_break = False
-            
-            # For each possible feedback pattern after this guess
             for feedback, remaining_words in outcomes.items():
-                # Skip empty outcomes
                 if not remaining_words:
                     continue
                 
-                # If only one word remains, this branch is solved
-                if len(remaining_words) == 1:
+                if len(remaining_words) == 1: # branch is solved
                     outcome_score = 1
-                # If at max depth or very few words, no need to search further
-                elif depth + 1 >= self.max_depth or len(remaining_words) <= 2:
+                elif depth + 1 >= self.max_depth or len(remaining_words) <= 2: # max depth or few words
                     outcome_score = len(remaining_words)
                 else:
-                    # Recursively find the best guess for this subset of words
+                    # recursively find the best guess for this subset
                     next_guess_words = [w for w in guess_words if w != guess] or guess_words
                     _, outcome_score = self._find_best_guess(next_guess_words, remaining_words, depth + 1)
                 
-                # Update worst-case score for this guess
                 worst_case_score = max(worst_case_score, outcome_score)
                 
-                # Alpha-beta pruning: if this guess is already worse than our best, skip it
-                if worst_case_score >= best_score:
-                    should_break = True
+                if worst_case_score >= best_score: # prune
+                    should_prune = True
                     break
             
-            # Skip to next guess if this one is already worse
-            if should_break:
+            if should_prune:
                 continue
                 
-            # Update best guess if this one is better
             if worst_case_score < best_score:
                 best_score = worst_case_score
                 best_guess = guess
                 
-                # If we found a perfect guess (worst case = 1), we can stop searching
+                # perfect guess
                 if best_score == 1:
                     break
         
-        # Cache and return the result
         self.cache[cache_key] = (best_guess, best_score)
         return best_guess, best_score
 
@@ -168,7 +153,7 @@ class MinimaxSolver(BaseSolver):
                 best_score = worst_case
                 best_guess = guess
                 
-                # Found a perfect guess
+                # perfect guess
                 if best_score == 1:
                     break
         
