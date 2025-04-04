@@ -28,14 +28,15 @@ class Node:
 class MinimaxSolver(BaseSolver):
     """A solver that uses minimax with alpha-beta pruning to minimize worst-case scenarios."""
 
-    def __init__(self, ordered_words: List[str], ordered_words_path=config.ORDERED_WORDS_PATH):
+    def __init__(self, words: List[str], ordered_words_path=config.ORDERED_WORDS_PATH):
         """Initialize the solver.
 
         Args:
             ordered_words: List of valid 5-letter words (ordered by heuristic to improve alpha beta pruning)
             max_depth: Maximum depth to search in the minimax tree (default: 1)
         """
-        self.ordered_words = load_dictionary(ordered_words_path)
+        ordered_words = load_dictionary(ordered_words_path)
+        self.ordered_words = [word for word in ordered_words if word in words]
         self.max_depth = config.MINIMAX_DEPTH
         # Cache to store evaluated positions to avoid redundant computation
         self.cache = {}
@@ -57,15 +58,10 @@ class MinimaxSolver(BaseSolver):
         if len(candidates) <= 2:
             return candidates[0]
 
-        # Clear the cache for a new search
+        # clear cache for new search
         self.cache = {}
         
-        # Find words to consider as guesses - use ordered_words if available, otherwise use candidates
-        guess_words = [word for word in self.ordered_words if word in candidates] or candidates
-        
-        # Limit the number of guess words if there are too many to ensure reasonable computation time
-        if len(guess_words) > 100:
-            guess_words = guess_words[:100]
+        guess_words = [word for word in self.ordered_words if word in candidates]
         
         # Find best guess using minimax search
         best_guess, _ = self._find_best_guess(guess_words, candidates, 0)
