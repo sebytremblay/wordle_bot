@@ -5,10 +5,6 @@ from typing import List, Tuple, Optional
 class BaseSolver(ABC):
     """Abstract base class for Wordle solvers."""
 
-    @classmethod
-    def solver_type(cls) -> str:
-        return cls.__name__.lower().replace('solver', '')
-
     @abstractmethod
     def select_guess(self, candidates: List[str]) -> str:
         """Select the next word to guess based on the current game state.
@@ -19,4 +15,10 @@ class BaseSolver(ABC):
         Returns:
             The selected word to guess
         """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_name(cls) -> str:
+        """Return a string name representing the solver."""
         pass

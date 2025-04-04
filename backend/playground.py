@@ -9,7 +9,9 @@ import time
 import sys
 from collections import defaultdict
 import statistics
+from typing import Type, List
 
+from wordle_game.solver.base_solver import BaseSolver
 import config
 from cache_service.hint_cache import HintCache
 from web_interface.app_session import AppSession
@@ -62,7 +64,7 @@ def remove_caching_from_greedy():
         GreedySolver._compute_expected_info_gain = GreedySolver._original_info_gain
 
 
-def run_game_no_limit(solver, dictionary, target_word, is_wordle_list=False):
+def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: str, is_wordle_list: bool = False):
     """Run a Wordle game with no guess limit.
 
     Args:
@@ -82,7 +84,7 @@ def run_game_no_limit(solver, dictionary, target_word, is_wordle_list=False):
     )
 
     def compute_hint():
-        hint, _, _ = session.get_hint(solver.solver_type())
+        hint, _, _ = session.get_hint(solver.get_name())
         return hint
 
     found_word = False
@@ -94,12 +96,10 @@ def run_game_no_limit(solver, dictionary, target_word, is_wordle_list=False):
             # Try to use cache
             guess, _ = HintCache.get_or_compute_hint(
                 game_state=session.get_game_state(),
-                solver_type=solver.solver_type(),
+                solver_type=solver.get_name(),
                 compute_fn=compute_hint
             )
-            if guess not in session.game_state.candidate_words:
-                raise Exception("Invalid guess: not in candidate words")
-        except Exception:
+        except Exception as e:
             # If cache fails, compute directly
             guess = compute_hint()
 
@@ -122,7 +122,8 @@ def run_game_no_limit(solver, dictionary, target_word, is_wordle_list=False):
     return win_within_6, total_guesses, guess_list
 
 
-def test_solver(solver_class, dictionary, test_words, is_wordle_list=False, print_hard_words=True):
+def test_solver(solver_class: Type[BaseSolver], dictionary: List[str], test_words: List[str],
+                is_wordle_list: bool = False, print_hard_words: bool = True):
     """Test a solver on multiple words and report results."""
     # Add caching for GreedySolver
     if solver_class == GreedySolver:
@@ -131,7 +132,7 @@ def test_solver(solver_class, dictionary, test_words, is_wordle_list=False, prin
     try:
         solver = SolverManager.create_solver(
             solver_class, dictionary, is_wordle_list)
-        solver_name = solver.solver_type()
+        solver_name = solver.get_name()
 
         print(f"Testing {solver_name} solver...")
 

@@ -19,3 +19,7 @@ class NaiveSolver(BaseSolver):
             raise ValueError("No candidate words remaining")
 
         return random.choice(candidates)
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "naive"

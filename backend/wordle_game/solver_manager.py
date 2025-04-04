@@ -86,16 +86,16 @@ class SolverManager:
                         hint = word
                         break
 
-        return hint, solver.solver_type(), len(candidates)
+        return hint, solver.get_name(), len(candidates)
 
     @staticmethod
     def _get_solver_class(solver_type: str) -> Type[BaseSolver]:
         """Get the solver class based on type."""
         solvers = {
-            NaiveSolver.solver_type(): NaiveSolver,
-            GreedySolver.solver_type(): GreedySolver,
-            MinimaxSolver.solver_type(): MinimaxSolver,
-            MCTSSolver.solver_type(): MCTSSolver
+            NaiveSolver.get_name(): NaiveSolver,
+            GreedySolver.get_name(): GreedySolver,
+            MinimaxSolver.get_name(): MinimaxSolver,
+            MCTSSolver.get_name(): MCTSSolver
         }
 
         solver_class = solvers.get(solver_type)

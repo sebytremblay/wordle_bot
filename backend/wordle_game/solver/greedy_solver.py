@@ -82,3 +82,7 @@ class GreedySolver(BaseSolver):
             partitions[feedback].append(word)
 
         return dict(partitions)
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "greedy"

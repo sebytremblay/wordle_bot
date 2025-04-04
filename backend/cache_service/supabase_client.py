@@ -2,14 +2,10 @@
 Supabase client configuration and management.
 """
 
-import os
 from typing import Optional
 from functools import lru_cache
 from supabase import create_client, Client
-from dotenv import load_dotenv
-
-# Ensure environment variables are loaded
-load_dotenv()
+import config
 
 
 class SupabaseConnectionError(Exception):
@@ -29,8 +25,8 @@ def get_supabase_client() -> Client:
     Raises:
         SupabaseConnectionError: If required environment variables are missing or connection fails
     """
-    url: Optional[str] = os.getenv('SUPABASE_URL')
-    key: Optional[str] = os.getenv('SUPABASE_KEY')
+    url: Optional[str] = config.SUPABASE_URL
+    key: Optional[str] = config.SUPABASE_KEY
 
     if not url or not key:
         raise SupabaseConnectionError(

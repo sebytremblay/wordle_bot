@@ -26,3 +26,7 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 # Solver settings
 DEFAULT_SOLVER = os.getenv('DEFAULT_SOLVER', 'naive')
 MCTS_SIMULATIONS = int(os.getenv('MCTS_SIMULATIONS', '100000'))
+
+# Supabase settings
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
