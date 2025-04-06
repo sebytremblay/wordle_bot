@@ -38,7 +38,7 @@ class MinimaxSolver(BaseSolver):
         ordered_words = load_dictionary(ordered_words_path)
         self.ordered_words = [word for word in ordered_words if word in words]
         self.max_depth = config.MINIMAX_DEPTH
-        # Cache to store evaluated positions to avoid redundant computation
+        # cache to avoid redundant computation
         self.cache = {}
 
     def select_guess(self, candidates: List[str]) -> str:
@@ -60,18 +60,15 @@ class MinimaxSolver(BaseSolver):
 
         # clear cache for new search
         self.cache = {}
-        
-        guess_words = [word for word in self.ordered_words if word in candidates]
-        
+                
         # Find best guess using minimax search
-        best_guess, _ = self._find_best_guess(guess_words, candidates, 0)
+        best_guess, _ = self._minimax(candidates, 0)
         return best_guess
 
-    def _find_best_guess(self, guess_words: List[str], candidates: List[str], depth: int) -> Tuple[str, int]:
+    def _minimax(self, candidates: List[str], depth: int) -> Tuple[str, int]:
         """Find the best guess and its score using minimax algorithm with specified depth.
         
         Args:
-            guess_words: List of words to consider as guesses
             candidates: List of possible target words
             depth: Current depth in the search tree
             
@@ -84,15 +81,18 @@ class MinimaxSolver(BaseSolver):
             
         # base cases: max depth reached or few candidates remain
         if depth >= self.max_depth or len(candidates) <= 2:
-            best_guess = candidates[0] if len(candidates) <= 2 else self._evaluate_guesses(guess_words, candidates)
+            best_guess = candidates[0] if len(candidates) <= 2 else self._evaluate_guesses(candidates)
             best_score = 1 if len(candidates) <= 1 else len(candidates)
             self.cache[cache_key] = (best_guess, best_score)
             return best_guess, best_score
             
         best_guess = None
         best_score = float('inf')
-        
-        for guess in guess_words:
+        i = 0
+        for guess in candidates[:15]:
+            #   for optimization, only consider 15 best words based on ordering heuristic
+            #   I found that the best word found is always within the first 10 remaining words
+            #   because it is ordered by the heuristic, the subset of 15 did not jeapordize accuracy
             outcomes = self._get_outcomes(guess, candidates)
             
             # perfectly splits candidates - optimal
@@ -103,7 +103,7 @@ class MinimaxSolver(BaseSolver):
             worst_case_score = 0
             should_prune = False
             
-            for feedback, remaining_words in outcomes.items():
+            for _, remaining_words in outcomes.items():
                 if not remaining_words:
                     continue
                 
@@ -113,8 +113,7 @@ class MinimaxSolver(BaseSolver):
                     outcome_score = len(remaining_words)
                 else:
                     # recursively find the best guess for this subset
-                    next_guess_words = [w for w in guess_words if w != guess] or guess_words
-                    _, outcome_score = self._find_best_guess(next_guess_words, remaining_words, depth + 1)
+                    _, outcome_score = self._minimax(remaining_words, depth + 1)
                 
                 worst_case_score = max(worst_case_score, outcome_score)
                 
@@ -132,16 +131,18 @@ class MinimaxSolver(BaseSolver):
                 # perfect guess
                 if best_score == 1:
                     break
+            i += 1
         
         self.cache[cache_key] = (best_guess, best_score)
+        # print(i)
         return best_guess, best_score
 
-    def _evaluate_guesses(self, guess_words: List[str], candidates: List[str]) -> str:
+    def _evaluate_guesses(self, candidates: List[str]) -> str:
         """Evaluate all guesses and return the one with the lowest worst-case score."""
         best_guess = None
         best_score = float('inf')
         
-        for guess in guess_words:
+        for guess in candidates:
             outcomes = self._get_outcomes(guess, candidates)
             worst_case = max(len(words) for words in outcomes.values()) if outcomes else 0
             
