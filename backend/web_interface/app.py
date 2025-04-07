@@ -32,7 +32,7 @@ def new_game():
     solver_type = data.get('solver', config.DEFAULT_SOLVER)
 
     # Create new game session
-    session = AppSession(word_list, is_wordle_list=True)
+    session = AppSession(word_list)
     SESSIONS[game_id] = session
 
     # Initialize solver if requested

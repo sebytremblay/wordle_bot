@@ -64,14 +64,13 @@ def remove_caching_from_greedy():
         GreedySolver._compute_expected_info_gain = GreedySolver._original_info_gain
 
 
-def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: str, is_wordle_list: bool = False):
+def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: str):
     """Run a Wordle game with no guess limit.
 
     Args:
         solver: The solver instance
         dictionary: The dictionary of valid words
         target_word: The target word to guess
-        is_wordle_list: Whether to use the official Wordle list
 
     Returns:
         tuple: (win_within_6, total_guesses)
@@ -80,7 +79,6 @@ def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: st
         dictionary_words=dictionary.copy(),
         target_word=target_word,
         max_guesses=MAX_GUESSES,
-        is_wordle_list=is_wordle_list
     )
 
     def compute_hint():
@@ -122,16 +120,15 @@ def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: st
     return win_within_6, total_guesses, guess_list
 
 
-def test_solver(solver_class: Type[BaseSolver], dictionary: List[str], test_words: List[str],
-                is_wordle_list: bool = False, print_hard_words: bool = True):
+def test_solver(solver_manager: SolverManager, solver_class: Type[BaseSolver], dictionary: List[str], test_words: List[str], print_hard_words: bool = True):
     """Test a solver on multiple words and report results."""
     # Add caching for GreedySolver
     if solver_class == GreedySolver:
         add_caching_to_greedy()
 
     try:
-        solver = SolverManager.create_solver(
-            solver_class, dictionary, is_wordle_list)
+        solver = solver_manager.create_solver(
+            solver_class, dictionary)
         solver_name = solver.get_name()
 
         print(f"Testing {solver_name} solver...")
@@ -153,7 +150,7 @@ def test_solver(solver_class: Type[BaseSolver], dictionary: List[str], test_word
 
             try:
                 win_within_6, guesses, guess_list = run_game_no_limit(
-                    solver, dictionary, word, is_wordle_list)
+                    solver, dictionary, word)
                 wins_within_6 += int(win_within_6)
                 total_guesses += guesses
                 guess_counts.append(guesses)
@@ -207,18 +204,17 @@ def test_solver(solver_class: Type[BaseSolver], dictionary: List[str], test_word
 def main():
     """Main function to test and compare solvers."""
     dictionary = load_dictionary(config.DICTIONARY_PATH)
-    is_wordle_list = True
 
     print("How many words to test?")
     print("1. Small sample (5 words)")
-    print("2. Medium sample (100 words)")
-    print("3. Large sample (1000 words)")
+    print("2. Medium sample (25 words)")
+    print("3. Large sample (100 words)")
     print("4. All words in valid wordle list")
     print("5. All wordle answers (before NYT bought Wordle)")
     choice = input("Enter choice (1-5): ")
     print()
 
-    sample_size_map = {"1": 5, "2": 100, "3": 1000, "4": 0, "5": -1}
+    sample_size_map = {"1": 5, "2": 25, "3": 100, "4": 0, "5": -1}
     size = sample_size_map.get(choice, 0)
     if size > 0:
         test_words = random.sample(dictionary, size)
@@ -246,10 +242,11 @@ def main():
     }
 
     solvers = solver_map.get(choice, solver_map["1"])
+    solver_manager = SolverManager(dictionary)
     results = []
     for solver_class in solvers:
-        result = test_solver(solver_class, dictionary,
-                             test_words, is_wordle_list)
+        result = test_solver(solver_manager, solver_class,
+                             dictionary, test_words)
         results.append(result)
 
     if len(results) > 1:
