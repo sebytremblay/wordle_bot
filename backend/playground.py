@@ -241,6 +241,7 @@ def main():
         "5": [NaiveSolver]
     }
 
+    mcts_depths = [10, 20, 30, 40, 50, 100]
     solvers = solver_map.get(choice, solver_map["1"])
     solver_manager = SolverManager(dictionary)
     results = []
