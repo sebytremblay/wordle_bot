@@ -55,14 +55,17 @@ def filter_candidates(candidates: List[str], guess: str, feedback: Tuple[int, ..
 
     # remove letters that appear elsewhere as yellow or green
     for i, code in enumerate(feedback):
-        if code > 0 and guess[i] in gray_letters:  # if letter is green/yellow somewhere else
+        # if letter is green/yellow somewhere else
+        if code > 0 and guess[i] in gray_letters:
             gray_letters.remove(guess[i])  # it's not really "gray"
 
     # filter words that contain any gray letters first
-    filtered_candidates = [word for word in candidates if word != guess and not any(letter in gray_letters for letter in word)]
+    filtered_candidates = [word for word in candidates if word != guess and not any(
+        letter in gray_letters for letter in word)]
 
     # now apply feedback checking
-    filtered = [word for word in filtered_candidates if matches_feedback(word, guess, feedback)]
+    filtered = [word for word in filtered_candidates if matches_feedback(
+        word, guess, feedback)]
 
     return filtered
 

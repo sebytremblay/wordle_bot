@@ -7,14 +7,13 @@ from config import MAX_GUESSES
 class AppSession:
     """Manages the state of a single Wordle game session including its solvers."""
 
-    def __init__(self, dictionary_words: List[str], max_guesses: int = MAX_GUESSES, target_word: str = "", is_wordle_list: bool = False):
+    def __init__(self, dictionary_words: List[str], max_guesses: int = MAX_GUESSES, target_word: str = ""):
         """Initialize a new game session.
 
         Args:
             dictionary_words: List of valid words for the game
             max_guesses: Maximum number of allowed guesses
             target_word: Optional specific target word
-            is_wordle_list: Whether using official Wordle word list
         """
         self.game_state = WordleGame(
             dictionary_words=dictionary_words,

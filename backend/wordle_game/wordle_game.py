@@ -1,15 +1,16 @@
-from typing import List, Tuple, Optional
+import config
+from typing import List, Tuple
 import random
 from .feedback import compute_feedback, filter_candidates
 
 
 class WordleGame:
-    def __init__(self, dictionary_words: List[str], max_guesses: int = 6, target_word: str = ""):
+    def __init__(self, dictionary_words: List[str], max_guesses: int = config.MAX_GUESSES, target_word: str = ""):
         """Initialize a new Wordle game.
 
         Args:
             dictionary_words: List of valid n-letter words
-            max_guesses: Maximum number of allowed guesses (default: 6)
+            max_guesses: Maximum number of allowed guesses
             target_word: Optional specific target word
         """
         self.dictionary = dictionary_words
