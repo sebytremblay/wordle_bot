@@ -31,7 +31,8 @@ class MCTSNode:
         Returns:
             The child node that was added
         """
-        new_candidates = filter_candidates(self.candidate_set, guess, feedback)
+        new_candidates = list(filter_candidates(
+            tuple(self.candidate_set), guess, feedback))
         node = MCTSNode(candidate_set=new_candidates, guess=guess, parent=self)
         self.children[(guess, feedback)] = node
         return node
@@ -84,6 +85,8 @@ class MCTSSolver(BaseSolver):
         """
         if len(candidates) == 1:
             return candidates[0]
+        if len(candidates) > 10000:
+            return "arose"
 
         # Initialize root node with full candidate set
         root = MCTSNode(candidate_set=candidates.copy())
@@ -92,7 +95,7 @@ class MCTSSolver(BaseSolver):
         for _ in range(self.simulations):
             node = root
             curr_guesses = 0
-            target_word = random.choice(root.candidate_set)
+            target_word = random.choice(self.ordered_words[:15])
 
             # Selection
             while not node.untried_moves and node.children:
@@ -148,7 +151,7 @@ class MCTSSolver(BaseSolver):
         """
         if not candidates:
             return 0.0
-        reward_multiplier = 100
+        reward_multiplier = 1
 
         # Adjust remaining guesses to account for moves already made
         remaining_guesses = config.MAX_GUESSES - curr_guesses
