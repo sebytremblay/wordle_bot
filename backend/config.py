@@ -25,8 +25,8 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # Solver settings
 DEFAULT_SOLVER = os.getenv('DEFAULT_SOLVER', 'naive')
-MCTS_SIMULATIONS = int(os.getenv('MCTS_SIMULATIONS', '100000'))
-MINIMAX_DEPTH = int(os.getenv('MINIMAX_DEPTH', '1'))
+MCTS_SIMULATIONS = int(os.getenv('MCTS_SIMULATIONS', '50'))
+MINIMAX_DEPTH = int(os.getenv('MINIMAX_DEPTH', '2'))
 
 # Supabase settings
 SUPABASE_URL = os.getenv('SUPABASE_URL')
