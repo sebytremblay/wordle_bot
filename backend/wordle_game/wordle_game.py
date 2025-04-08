@@ -1,15 +1,16 @@
-from typing import List, Tuple, Optional
+import config
+from typing import List, Tuple
 import random
 from .feedback import compute_feedback, filter_candidates
 
 
 class WordleGame:
-    def __init__(self, dictionary_words: List[str], max_guesses: int = 6, target_word: str = ""):
+    def __init__(self, dictionary_words: List[str], max_guesses: int = config.MAX_GUESSES, target_word: str = ""):
         """Initialize a new Wordle game.
 
         Args:
             dictionary_words: List of valid n-letter words
-            max_guesses: Maximum number of allowed guesses (default: 6)
+            max_guesses: Maximum number of allowed guesses
             target_word: Optional specific target word
         """
         self.dictionary = dictionary_words
@@ -54,8 +55,8 @@ class WordleGame:
         self.previous_guesses.add(guess)
 
         # Update candidate words based on feedback
-        self.candidate_words = filter_candidates(
-            self.candidate_words, guess, feedback)
+        self.candidate_words = list(filter_candidates(
+            tuple(self.candidate_words), guess, feedback))
 
         # Check if game is won
         self.game_won = (guess == self.target_word)

@@ -64,14 +64,13 @@ def remove_caching_from_greedy():
         GreedySolver._compute_expected_info_gain = GreedySolver._original_info_gain
 
 
-def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: str, is_wordle_list: bool = False):
+def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: str):
     """Run a Wordle game with no guess limit.
 
     Args:
         solver: The solver instance
         dictionary: The dictionary of valid words
         target_word: The target word to guess
-        is_wordle_list: Whether to use the official Wordle list
 
     Returns:
         tuple: (win_within_6, total_guesses)
@@ -80,7 +79,6 @@ def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: st
         dictionary_words=dictionary.copy(),
         target_word=target_word,
         max_guesses=MAX_GUESSES,
-        is_wordle_list=is_wordle_list
     )
 
     def compute_hint():
@@ -92,7 +90,17 @@ def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: st
     guess_list = []
 
     while not found_word:
-        guess = compute_hint()
+        try:
+            # Try to use cache
+            guess, _ = HintCache.get_or_compute_hint(
+                game_state=session.get_game_state(),
+                solver_type=solver.get_name(),
+                compute_fn=compute_hint
+            )
+        except Exception as e:
+            # If cache fails, compute directly
+            guess = compute_hint()
+
         guess_list.append(guess)
 
         # Submit guess
@@ -112,88 +120,101 @@ def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: st
     return win_within_6, total_guesses, guess_list
 
 
-def test_solver(solver_class: Type[BaseSolver], dictionary: List[str], test_words: List[str],
-                is_wordle_list: bool = False, print_hard_words: bool = True):
+def test_solver(solver_manager: SolverManager, solver_class: Type[BaseSolver], dictionary: List[str], test_words: List[str], print_hard_words: bool = True):
     """Test a solver on multiple words and report results."""
-    solver = SolverManager.create_solver(solver_class, dictionary)
-    solver_name = solver.get_name()
+    # Add caching for GreedySolver
+    if solver_class == GreedySolver:
+        add_caching_to_greedy()
 
-    print(f"Testing {solver_name} solver...")
+    try:
+        solver = solver_manager.create_solver(
+            solver_class, dictionary)
+        solver_name = solver.get_name()
 
-    total_guesses = 0
-    wins_within_6 = 0
-    guess_counts = []
-    guess_distribution = defaultdict(int)
-    long_guess_cases = {}
+        print(f"Testing {solver_name} solver...")
 
-    start_time = time.time()
+        total_guesses = 0
+        wins_within_6 = 0
+        guess_counts = []
+        guess_distribution = defaultdict(int)
+        long_guess_cases = {}
 
-    for i, word in enumerate(test_words):
-        progress = i / len(test_words) * 100
-        sys.stdout.write(f"\r{word}!!!!{progress:.1f}% complete...")
-        sys.stdout.flush()
+        start_time = time.time()
 
-        try:
-            win_within_6, guesses, guess_list = run_game_no_limit(
-                solver, dictionary, word, is_wordle_list)
-            wins_within_6 += int(win_within_6)
-            total_guesses += guesses
-            guess_counts.append(guesses)
-            guess_distribution[guesses] += 1
-            if guesses > 10:
-                long_guess_cases[word] = guess_list
-        except Exception as e:
-            print(f"\nError on word '{word}': {str(e)}")
-            continue
+        # Test each word
+        for i, word in enumerate(test_words):
+            # Show progress
+            progress = i / len(test_words) * 100
+            sys.stdout.write(f"\r{progress:.1f}% complete...")
+            sys.stdout.flush()
 
-    end_time = time.time()
-    win_rate = (wins_within_6 / len(test_words)) * 100
-    avg_guesses = total_guesses / len(guess_counts) if guess_counts else 0
-    median_guesses = statistics.median(guess_counts) if guess_counts else 0
-    time_taken = end_time - start_time
+            try:
+                win_within_6, guesses, guess_list = run_game_no_limit(
+                    solver, dictionary, word)
+                wins_within_6 += int(win_within_6)
+                total_guesses += guesses
+                guess_counts.append(guesses)
+                guess_distribution[guesses] += 1
+                if guesses > 10:
+                    long_guess_cases[word] = guess_list
+            except Exception as e:
+                print(f"\nError on word '{word}': {str(e)}")
+                continue
 
-    print("\nResults:")
-    print(f"Win rate (6 guesses or less): {win_rate:.1f}%")
-    print(f"Average guesses needed: {avg_guesses:.2f}")
-    print(f"Median guesses needed: {median_guesses}")
-    print(f"Time taken: {time_taken:.2f} seconds")
+        end_time = time.time()
 
-    print("\nGuess Distribution:")
-    for guesses, count in sorted(guess_distribution.items()):
-        percentage = (count / len(guess_counts)) * 100
-        if guesses >= MAX_GUESSES:
-            print(f">={guesses}: {count} ({percentage:.1f}%)")
-        else:
-            print(f"{guesses}: {count} ({percentage:.1f}%)")
+        win_rate = (wins_within_6 / len(test_words)) * 100
+        avg_guesses = total_guesses / len(guess_counts) if guess_counts else 0
+        median_guesses = statistics.median(guess_counts) if guess_counts else 0
+        time_taken = end_time - start_time
 
-    if print_hard_words and long_guess_cases:
-        print("\nWords that took more than 10 guesses:")
-        for word, guesses in long_guess_cases.items():
-            print(f"{word}: {guesses}")
+        print("\nResults:")
+        print(f"Win rate (6 guesses or less): {win_rate:.1f}%")
+        print(f"Average guesses needed: {avg_guesses:.2f}")
+        print(f"Median guesses needed: {median_guesses}")
+        print(f"Time taken: {time_taken:.2f} seconds")
 
-    return {
-        "solver": solver_name,
-        "win_rate": win_rate,
-        "avg_guesses": avg_guesses,
-        "median_guesses": median_guesses,
-        "time_taken": time_taken
-    }
+        print("\nGuess Distribution:")
+        for guesses, count in sorted(guess_distribution.items()):
+            percentage = (count / len(guess_counts)) * 100
+            if guesses >= MAX_GUESSES:
+                print(f">={guesses}: {count} ({percentage:.1f}%)")
+            else:
+                print(f"{guesses}: {count} ({percentage:.1f}%)")
+
+        if print_hard_words and long_guess_cases:
+            print("\nWords that took more than 10 guesses:")
+            for word, guesses in long_guess_cases.items():
+                print(f"{word}: {guesses}")
+
+        return {
+            "solver": solver_name,
+            "win_rate": win_rate,
+            "avg_guesses": avg_guesses,
+            "median_guesses": median_guesses,
+            "time_taken": time_taken
+        }
+
+    finally:
+        # Remove caching for GreedySolver
+        if solver_class == GreedySolver:
+            remove_caching_from_greedy()
+
 
 def main():
     """Main function to test and compare solvers."""
     dictionary = load_dictionary(config.DICTIONARY_PATH)
-    is_wordle_list = True
 
     print("How many words to test?")
     print("1. Small sample (5 words)")
-    print("2. Medium sample (100 words)")
-    print("3. Large sample (1000 words)")
+    print("2. Medium sample (25 words)")
+    print("3. Large sample (100 words)")
     print("4. All words in valid wordle list")
     print("5. All wordle answers (before NYT bought Wordle)")
     choice = input("Enter choice (1-5): ")
     print()
 
-    sample_size_map = {"1": 5, "2": 100, "3": 1000, "4": 0, "5": -1}
+    sample_size_map = {"1": 5, "2": 25, "3": 100, "4": 0, "5": -1}
     size = sample_size_map.get(choice, 0)
     if size > 0:
         test_words = random.sample(dictionary, size)
@@ -220,12 +241,25 @@ def main():
         "5": [NaiveSolver]
     }
 
+    mcts_depths = [10, 25, 50, 100]
+    original_mcts_simulations = config.MCTS_SIMULATIONS
+
     solvers = solver_map.get(choice, solver_map["1"])
+    solver_manager = SolverManager(dictionary)
     results = []
     for solver_class in solvers:
-        result = test_solver(solver_class, dictionary,
-                             test_words, is_wordle_list)
-        results.append(result)
+        if solver_class == MCTSSolver:
+            for depth in mcts_depths:
+                config.MCTS_SIMULATIONS = depth
+                result = test_solver(solver_manager, solver_class,
+                                     dictionary, test_words)
+                results.append(result)
+        else:
+            result = test_solver(solver_manager, solver_class,
+                                 dictionary, test_words)
+            results.append(result)
+
+    config.MCTS_SIMULATIONS = original_mcts_simulations
 
     if len(results) > 1:
         print("\n" + "="*60)

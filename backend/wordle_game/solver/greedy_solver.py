@@ -27,6 +27,8 @@ class GreedySolver(BaseSolver):
             return "tares"
         elif len(candidates) <= 2:
             return candidates[0]
+        if len(candidates) > 10000:
+            return "tares"
 
         best_score = float('-inf')
         best_guess = None
