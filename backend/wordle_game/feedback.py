@@ -1,8 +1,10 @@
+from functools import lru_cache
 from typing import List, Tuple
 from collections import Counter
 import config
 
 
+@lru_cache(maxsize=None)
 def compute_feedback(guess: str, target: str) -> Tuple[int, ...]:
     """Compute Wordle feedback for a guess against a target word.
 
@@ -38,7 +40,8 @@ def compute_feedback(guess: str, target: str) -> Tuple[int, ...]:
     return tuple(feedback)
 
 
-def filter_candidates(candidates: List[str], guess: str, feedback: Tuple[int, ...]) -> List[str]:
+@lru_cache(maxsize=None)
+def filter_candidates(candidates: Tuple[str, ...], guess: str, feedback: Tuple[int, ...]) -> Tuple[str, ...]:
     """Filter the candidate words based on the feedback from a guess.
 
     Args:
@@ -67,9 +70,10 @@ def filter_candidates(candidates: List[str], guess: str, feedback: Tuple[int, ..
     filtered = [word for word in filtered_candidates if matches_feedback(
         word, guess, feedback)]
 
-    return filtered
+    return tuple(filtered)
 
 
+@lru_cache(maxsize=None)
 def matches_feedback(word: str, guess: str, feedback: Tuple[int, ...]) -> bool:
     """Check if a word matches the feedback pattern from a guess.
 

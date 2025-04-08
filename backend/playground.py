@@ -241,14 +241,25 @@ def main():
         "5": [NaiveSolver]
     }
 
-    mcts_depths = [10, 20, 30, 40, 50, 100]
+    mcts_depths = [10, 25, 50, 100]
+    original_mcts_simulations = config.MCTS_SIMULATIONS
+
     solvers = solver_map.get(choice, solver_map["1"])
     solver_manager = SolverManager(dictionary)
     results = []
     for solver_class in solvers:
-        result = test_solver(solver_manager, solver_class,
-                             dictionary, test_words)
-        results.append(result)
+        if solver_class == MCTSSolver:
+            for depth in mcts_depths:
+                config.MCTS_SIMULATIONS = depth
+                result = test_solver(solver_manager, solver_class,
+                                     dictionary, test_words)
+                results.append(result)
+        else:
+            result = test_solver(solver_manager, solver_class,
+                                 dictionary, test_words)
+            results.append(result)
+
+    config.MCTS_SIMULATIONS = original_mcts_simulations
 
     if len(results) > 1:
         print("\n" + "="*60)
