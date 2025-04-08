@@ -108,7 +108,7 @@ class SolverManager:
     def create_solver(self, solver_class: Type[BaseSolver], dictionary: List[str]) -> BaseSolver:
         """Create a new solver instance with appropriate parameters."""
         if solver_class == MinimaxSolver:
-            return solver_class(self.ordered_words)
+            return solver_class(dictionary, self.ordered_words)
         elif solver_class == MCTSSolver:
             return solver_class(dictionary, self.ordered_words, simulations=config.MCTS_SIMULATIONS)
         else:
