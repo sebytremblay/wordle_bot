@@ -26,14 +26,16 @@ const Subtitle = styled.p`
   max-width: 600px;
 `;
 
-const Header: React.FC = () => (
-    <HeaderContainer>
-        <Title>WORDLE SOLVER</Title>
-        <Subtitle>
-            Play Wordle with AI assistance! Enter your guesses or get hints from different solving strategies.
-            The colored feedback shows how close your guess was: green for correct position, yellow for correct letter in wrong position.
-        </Subtitle>
-    </HeaderContainer>
+interface HeaderProps {
+  title?: string;
+  subtitle?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ title, subtitle }) => (
+  <HeaderContainer>
+    <Title>{title || ''}</Title>
+    <Subtitle>{subtitle || ''}</Subtitle>
+  </HeaderContainer>
 );
 
 export default Header; 

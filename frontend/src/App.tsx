@@ -5,7 +5,6 @@ import NavBar from './components/NavBar';
 import HomePage from './pages/HomePage';
 import PlayAgainstSolverPage from './pages/PlayAgainstSolverPage';
 import AboutPage from './pages/AboutPage';
-
 const AppContainer = styled.div`
     min-height: 100vh;
     background-color: #f9f9f9;
