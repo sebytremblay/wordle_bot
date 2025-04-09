@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import WordListPopup from './WordListPopup';
-import { Counter } from '../styles/components/WordListCounter.styles';
+import WordListPopup from '@/components/WordListPopup';
+import { Counter } from '@/styles/components/WordListCounter.styles';
 
 interface WordListCounterProps {
     count: number;

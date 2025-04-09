@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { NavContainer, NavContent, NavLink } from '../styles/components/NavBar.styles';
+import { NavContainer, NavContent, NavLink } from '@/styles/components/NavBar.styles';
 
 const NavBar: React.FC = () => {
     const location = useLocation();
