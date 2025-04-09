@@ -59,6 +59,16 @@ export async function startNewGame(
     });
 }
 
+export async function startMirrorGame(
+    gameId: string,
+    solver: string = 'naive'
+): Promise<NewGameResponse> {
+    return makeRequest<NewGameResponse>('/mirrorgame', {
+        method: 'POST',
+        body: JSON.stringify({ game_id: gameId, solver }),
+    });
+}
+
 export async function submitGuess(
     gameId: string,
     guess: string

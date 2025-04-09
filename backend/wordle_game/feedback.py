@@ -108,6 +108,10 @@ def matches_feedback(word: str, guess: str, feedback: Tuple[int, ...]) -> bool:
             # Letter must exist in remaining word characters
             if letter not in word_chars or word_chars[letter] < guess_chars[letter]:
                 return False
+
+            # Additional check: yellow letter should not be in the same position
+            if word[i] == letter:
+                return False
         elif code == 0:
             # If the letter was marked as gray, it shouldn't appear in remaining positions
             # unless it appears elsewhere as yellow or green

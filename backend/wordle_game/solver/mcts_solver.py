@@ -20,6 +20,7 @@ class MCTSNode:
         self.visits = 0
         self.value = 0.0
         self.untried_moves: List[str] = candidate_set.copy()
+        self.made_guess = False
 
     def add_child(self, feedback: Tuple[int, ...], guess: str) -> 'MCTSNode':
         """Add a child node with updated candidate set based on feedback.
@@ -74,6 +75,9 @@ class MCTSSolver(BaseSolver):
         self.simulations = simulations
         self.ordered_words = ordered_words
 
+    def starting_word(self) -> str:
+        return "crate"
+
     def select_guess(self, candidates: List[str]) -> str:
         """Select a guess using Monte Carlo Tree Search.
 
@@ -85,8 +89,6 @@ class MCTSSolver(BaseSolver):
         """
         if len(candidates) == 1:
             return candidates[0]
-        if len(candidates) > 10000:
-            return "arose"
 
         # Initialize root node with full candidate set
         root = MCTSNode(candidate_set=candidates.copy())

@@ -1,4 +1,5 @@
 from typing import Optional, Tuple, List
+from wordle_game.solver.base_solver import BaseSolver
 from wordle_game.wordle_game import WordleGame
 from wordle_game.solver_manager import SolverManager
 from config import MAX_GUESSES
@@ -46,14 +47,15 @@ class AppSession:
         hint, solver_type_used, candidates_remaining = self.solver_manager.get_hint(
             candidates=candidates,
             previous_guesses=previous_guesses,
-            solver_type=solver_type
+            solver_type=solver_type,
+            first_guess=len(previous_guesses) == 0
         )
 
         return hint, solver_type_used, candidates_remaining
 
     def get_game_state(self) -> dict:
         """Get the current game state."""
-        game_state = self.game_state.get_game_state()
+        game_state=self.game_state.get_game_state()
 
         return game_state
 

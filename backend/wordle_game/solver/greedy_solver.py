@@ -8,6 +8,12 @@ from ..feedback import compute_feedback
 class GreedySolver(BaseSolver):
     """A solver that uses information gain to select guesses."""
 
+    def __init__(self):
+        self.made_guess = False
+
+    def starting_word(self) -> str:
+        return "tares"
+
     def select_guess(self, candidates: List[str]) -> str:
         """Select a guess that maximizes expected information gain.
 
@@ -22,13 +28,8 @@ class GreedySolver(BaseSolver):
         Returns:
             The word with highest expected information gain
         """
-
-        if len(candidates) > 10000:
-            return "tares"
-        elif len(candidates) <= 2:
+        if len(candidates) <= 2:
             return candidates[0]
-        if len(candidates) > 10000:
-            return "tares"
 
         best_score = float('-inf')
         best_guess = None

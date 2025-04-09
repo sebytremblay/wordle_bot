@@ -241,7 +241,7 @@ def main():
         "5": [NaiveSolver]
     }
 
-    mcts_depths = [10, 25, 50, 100]
+    mcts_depths = [50]
     original_mcts_simulations = config.MCTS_SIMULATIONS
 
     solvers = solver_map.get(choice, solver_map["1"])

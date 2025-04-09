@@ -65,7 +65,8 @@ def make_guess():
         feedback, _ = session.submit_guess(data['guess'])
         return jsonify({
             'feedback': feedback,
-            'state': session.get_game_state()
+            'state': session.get_game_state(),
+            'game_id': game_id
         })
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
@@ -76,7 +77,7 @@ def get_hint():
     """Get a hint from a solver with caching support."""
     game_id = request.args.get('game_id', 'default')
     solver_type = request.args.get(
-        'solver', 'naive')  # Default to naive solver
+        'solver', config.DEFAULT_SOLVER)
 
     session = SESSIONS.get(game_id)
     if not session:
@@ -109,7 +110,8 @@ def get_hint():
         return jsonify({
             'hint': hint,
             'solver_type': solver_type,
-            'cached': was_cached
+            'cached': was_cached,
+            'game_id': game_id
         })
 
     except Exception as e:
@@ -133,12 +135,12 @@ def list_solvers():
                 'description': 'Uses information gain to select optimal guesses'
             },
             {
-                'id': 'minimax',
+                'id': f'minimax_{config.MINIMAX_DEPTH}',
                 'name': 'Minimax Solver',
                 'description': 'Uses alpha-beta pruning to minimize worst-case scenarios'
             },
             {
-                'id': 'mcts',
+                'id': f'mcts_{config.MCTS_SIMULATIONS}',
                 'name': 'MCTS Solver',
                 'description': 'Uses Monte Carlo Tree Search for probabilistic optimization'
             }
@@ -158,6 +160,38 @@ def get_remaining_words():
     return jsonify({
         'words': remaining_words,
         'count': len(remaining_words)
+    })
+
+
+@app.route('/mirrorgame', methods=['POST'])
+def mirror_game():
+    """Create a new game with the same target word as an existing game."""
+    data = request.get_json()
+    if not data or 'game_id' not in data:
+        return jsonify({'error': 'No game_id provided'}), 400
+
+    original_session = SESSIONS.get(data['game_id'])
+    if not original_session:
+        return jsonify({'error': 'Original game not found'}), 404
+
+    # Create new game with same target word
+    new_game_id = str(uuid.uuid4())
+    new_session = AppSession(
+        word_list, target_word=original_session.game_state.target_word)
+    SESSIONS[new_game_id] = new_session
+
+    # Initialize solver if requested
+    solver_type = data.get('solver', config.DEFAULT_SOLVER)
+    if solver_type:
+        try:
+            new_session.solver_manager.get_solver(solver_type)
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+
+    return jsonify({
+        'game_id': new_game_id,
+        'solver_type': solver_type,
+        'state': new_session.get_game_state()
     })
 
 

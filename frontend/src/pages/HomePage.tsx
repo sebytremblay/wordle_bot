@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import GameBoard from '../components/GameBoard';
 import GuessInput from '../components/GuessInput';
-import HintPanel from '../components/HintPanel';
+import HintPanel from '../components/HomePage/HintPanel';
 import WordListCounter from '../components/WordListCounter';
 import { startNewGame } from '../services/api';
 import { GameState } from '../types/game';
@@ -64,6 +64,8 @@ const NewGameButton = styled.button`
 const HomePage: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const title = 'WORDLE SOLVER';
+    const subtitle = 'Play Wordle with AI assistance! Enter your guesses or get hints from different solving strategies. The colored feedback shows how close your guess was: green for correct position, yellow for correct letter in wrong position.';
 
     useEffect(() => {
         const initGame = async () => {
@@ -101,7 +103,7 @@ const HomePage: React.FC = () => {
     const isGameOver = gameState.state.game_over;
 
     return (
-        <Container>
+        <Container style={{ overflow: 'hidden' }}>
             <Header />
             <Content>
                 <GameBoard state={gameState} />
