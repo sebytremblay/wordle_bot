@@ -8,7 +8,6 @@ import SolverSelect from '../components/PlayAgainstSolverPage/SolverSelect';
 import WordListCounter from '../components/WordListCounter';
 import { startNewGame, getSolvers, startMirrorGame, getHint, submitGuess } from '../services/api';
 import { GameState } from '../types/game';
-import { SolverInfo } from '../types/solvers';
 
 const Container = styled.div`
     max-width: 800px;
@@ -40,6 +39,13 @@ const Content = styled.main`
     flex: 1;
     display: flex;
     flex-direction: column;
+`;
+
+const SolverSelectContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 1rem 0;
 `;
 
 const LoadingMessage = styled.div`
@@ -180,10 +186,12 @@ const PlayAgainstSolverPage: React.FC = () => {
         <Container>
             <Header />
             <Content>
-                <SolverSelect
-                    onChange={(e) => setSelectedSolver(e.target.value)}
-                    disabled={isGameOver || isLoading}
-                />
+                <SolverSelectContainer>
+                    <SolverSelect
+                        onChange={(e) => setSelectedSolver(e.target.value)}
+                        disabled={isGameOver || isLoading}
+                    />
+                </SolverSelectContainer>
                 <GameContainer>
                     <GameSection>
                         <GameTitle>Your Game</GameTitle>
