@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
-import { SolverInfo } from '../../types/hint';
-import { getSolvers } from '../../services/api';
+import { SolverInfo } from '@/types/hint';
+import { getSolvers } from '@/services/api';
 
 interface SolverSelectProps {
     disabled?: boolean;

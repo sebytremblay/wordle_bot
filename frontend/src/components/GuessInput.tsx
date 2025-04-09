@@ -1,7 +1,7 @@
 import React, { useState, FormEvent } from 'react';
-import { GameState } from '../types/game';
-import { submitGuess } from '../services/api';
-import { Form, Input, Button, ErrorMessage } from '../styles/components/GuessInput.styles';
+import { GameState } from '@/types/game';
+import { submitGuess } from '@/services/api';
+import { Form, Input, Button, ErrorMessage } from '@/styles/components/GuessInput.styles';
 
 interface GuessInputProps {
     gameId: string;

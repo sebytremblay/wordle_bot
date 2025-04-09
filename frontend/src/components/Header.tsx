@@ -1,5 +1,5 @@
 import React from 'react';
-import { HeaderContainer, Title, Subtitle } from '../styles/components/Header.styles';
+import { HeaderContainer, Title, Subtitle } from '@/styles/components/Header.styles';
 
 interface HeaderProps {
   title?: string;

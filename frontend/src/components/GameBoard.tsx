@@ -1,7 +1,7 @@
 import React from 'react';
-import { GameState } from '../types/game';
-import { FeedbackType } from '../types/common';
-import { Grid, Row, Cell } from '../styles/components/GameBoard.styles';
+import { GameState } from '@/types/game';
+import { FeedbackType } from '@/types/common';
+import { Grid, Row, Cell } from '@/styles/components/GameBoard.styles';
 
 interface GameBoardProps {
     state: GameState;

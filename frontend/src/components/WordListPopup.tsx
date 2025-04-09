@@ -6,7 +6,7 @@ import {
     Title,
     WordList,
     Word
-} from '../styles/components/WordListPopup.styles';
+} from '@/styles/components/WordListPopup.styles';
 
 interface WordListPopupProps {
     isOpen: boolean;
@@ -19,7 +19,7 @@ const WordListPopup: React.FC<WordListPopupProps> = ({ isOpen, onClose, words })
 
     return (
         <Overlay onClick={onClose}>
-            <PopupContent onClick={e => e.stopPropagation()}>
+            <PopupContent onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                 <CloseButton onClick={onClose}>&times;</CloseButton>
                 <Title>Remaining Words ({words.length})</Title>
                 <WordList>
