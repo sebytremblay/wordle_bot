@@ -108,28 +108,6 @@ const PlayAgainstSolverPage: React.FC = () => {
         initGame();
     }, []);
 
-    const handleGuessSubmit = async (gameId: string, guess: string) => {
-        if (!playerGameState || !solverGameState) return;
-
-        setIsLoading(true);
-        try {
-            // Submit player's guess
-            const playerResponse = await submitGuess(gameId, guess);
-            setPlayerGameState(playerResponse.state);
-
-            if (!playerResponse.state.state.game_over) {
-                // Get solver's guess
-                const solverHint = await getHint(solverGameState.game_id, selectedSolver);
-                const solverResponse = await submitGuess(solverGameState.game_id, solverHint.hint);
-                setSolverGameState(solverResponse.state);
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to process guess');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const handleNewGame = async () => {
         try {
             setIsLoading(true);
@@ -169,17 +147,6 @@ const PlayAgainstSolverPage: React.FC = () => {
     return (
         <Container>
             <Title>Play Against a Solver</Title>
-            <SolverSelect
-                value={selectedSolver}
-                onChange={(e) => setSelectedSolver(e.target.value)}
-                disabled={isLoading}
-            >
-                {solvers.map((solver) => (
-                    <option key={solver.id} value={solver.id}>
-                        {solver.name}
-                    </option>
-                ))}
-            </SolverSelect>
             <GameContainer>
                 <GameSection>
                     <GameTitle>Your Game</GameTitle>
@@ -191,11 +158,24 @@ const PlayAgainstSolverPage: React.FC = () => {
                 </GameSection>
             </GameContainer>
             {isLoading && <LoadingSpinner />}
-            <GuessInput
-                gameId={playerGameState.game_id}
-                onGuessUpdate={setPlayerGameState}
-                disabled={isLoading || isGameOver}
-            />
+            <div style={{ display: 'grid', justifyContent: 'center', gap: '0.25rem' }}>
+                <GuessInput
+                    gameId={playerGameState.game_id}
+                    onGuessUpdate={setPlayerGameState}
+                    disabled={isLoading || isGameOver}
+                />
+                <SolverSelect
+                    value={selectedSolver}
+                    onChange={(e) => setSelectedSolver(e.target.value)}
+                    disabled={isLoading}
+                >
+                    {solvers.map((solver) => (
+                        <option key={solver.id} value={solver.id}>
+                            {solver.name}
+                        </option>
+                    ))}
+                </SolverSelect>
+            </div>
             {isGameOver && (
                 <NewGameButton onClick={handleNewGame}>
                     New Game
