@@ -59,12 +59,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ gameId, onGuessUpdate, disabled
 
         try {
             const response = await submitGuess(gameId, guess.toLowerCase());
-            onGuessUpdate({
-                state: response.state,
-                game_id: gameId,
-                message: response.message,
-                error: response.error
-            });
+            onGuessUpdate(response.state);
             setGuess('');
             setError(null);
         } catch (err) {

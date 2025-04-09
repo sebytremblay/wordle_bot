@@ -5,6 +5,7 @@ import styled from '@emotion/styled';
 
 interface GameBoardProps {
     state: GameState;
+    hideLetters?: boolean;
 }
 
 interface CellProps {
@@ -84,7 +85,7 @@ const getFeedbackStatus = (feedback: FeedbackType): 'correct' | 'present' | 'abs
     }
 };
 
-const GameBoard: React.FC<GameBoardProps> = ({ state }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ state, hideLetters = false }) => {
     // Create a 6x5 grid of empty cells
     const emptyGrid = Array(6).fill(null).map(() => Array(5).fill(''));
 
@@ -124,7 +125,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ state }) => {
                             key={`${rowIndex}-${colIndex}`}
                             status={typeof cell === 'string' ? undefined : cell.status}
                         >
-                            {typeof cell === 'string' ? '' : cell.letter}
+                            {typeof cell === 'string' || hideLetters ? '' : cell.letter}
                         </Cell>
                     ))}
                 </Row>
