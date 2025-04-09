@@ -199,7 +199,7 @@ const PlayAgainstSolverPage: React.FC = () => {
                     </GameSection>
                     <GameSection>
                         <GameTitle>Solver's Game</GameTitle>
-                        <GameBoard state={solverGameState} hideLetters={true} />
+                        <GameBoard state={solverGameState} hideLetters={!isGameOver} />
                     </GameSection>
                 </GameContainer>
                 <GuessInput
