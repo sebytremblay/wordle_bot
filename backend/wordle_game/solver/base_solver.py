@@ -17,6 +17,11 @@ class BaseSolver(ABC):
         """
         pass
 
+    @abstractmethod
+    def starting_word(self) -> str:
+        """Return the starting word for the solver."""
+        pass
+
     @classmethod
     @abstractmethod
     def get_name(cls) -> str:
