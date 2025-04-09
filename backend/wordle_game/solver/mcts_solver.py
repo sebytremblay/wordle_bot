@@ -20,6 +20,7 @@ class MCTSNode:
         self.visits = 0
         self.value = 0.0
         self.untried_moves: List[str] = candidate_set.copy()
+        self.made_guess = False
 
     def add_child(self, feedback: Tuple[int, ...], guess: str) -> 'MCTSNode':
         """Add a child node with updated candidate set based on feedback.
@@ -85,8 +86,9 @@ class MCTSSolver(BaseSolver):
         """
         if len(candidates) == 1:
             return candidates[0]
-        if len(candidates) > 10000:
-            return "arose"
+        if not self.made_guess:
+            self.made_guess = True
+            return "crate"
 
         # Initialize root node with full candidate set
         root = MCTSNode(candidate_set=candidates.copy())
