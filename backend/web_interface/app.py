@@ -65,7 +65,8 @@ def make_guess():
         feedback, _ = session.submit_guess(data['guess'])
         return jsonify({
             'feedback': feedback,
-            'state': session.get_game_state()
+            'state': session.get_game_state(),
+            'game_id': game_id
         })
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
@@ -109,7 +110,8 @@ def get_hint():
         return jsonify({
             'hint': hint,
             'solver_type': solver_type,
-            'cached': was_cached
+            'cached': was_cached,
+            'game_id': game_id
         })
 
     except Exception as e:
