@@ -69,7 +69,7 @@ const HomePage: React.FC = () => {
         const initGame = async () => {
             try {
                 const response = await startNewGame();
-                setGameState(response);
+                setGameState(response.state);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to start game');
             }
@@ -130,7 +130,7 @@ const HomePage: React.FC = () => {
                         <NewGameButton onClick={async () => {
                             try {
                                 const response = await startNewGame();
-                                setGameState(response);
+                                setGameState(response.state);
                             } catch (err) {
                                 setError(err instanceof Error ? err.message : 'Failed to start new game');
                             }

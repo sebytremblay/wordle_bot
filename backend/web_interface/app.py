@@ -161,5 +161,37 @@ def get_remaining_words():
     })
 
 
+@app.route('/mirrorgame', methods=['POST'])
+def mirror_game():
+    """Create a new game with the same target word as an existing game."""
+    data = request.get_json()
+    if not data or 'game_id' not in data:
+        return jsonify({'error': 'No game_id provided'}), 400
+
+    original_session = SESSIONS.get(data['game_id'])
+    if not original_session:
+        return jsonify({'error': 'Original game not found'}), 404
+
+    # Create new game with same target word
+    new_game_id = str(uuid.uuid4())
+    new_session = AppSession(
+        word_list, target_word=original_session.game.target_word)
+    SESSIONS[new_game_id] = new_session
+
+    # Initialize solver if requested
+    solver_type = data.get('solver', config.DEFAULT_SOLVER)
+    if solver_type:
+        try:
+            new_session.solver_manager.get_solver(solver_type)
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+
+    return jsonify({
+        'game_id': new_game_id,
+        'solver_type': solver_type,
+        'state': new_session.get_game_state()
+    })
+
+
 if __name__ == '__main__':
     app.run(debug=True)
