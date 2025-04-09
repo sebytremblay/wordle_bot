@@ -75,6 +75,9 @@ class MCTSSolver(BaseSolver):
         self.simulations = simulations
         self.ordered_words = ordered_words
 
+    def starting_word(self) -> str:
+        return "crate"
+
     def select_guess(self, candidates: List[str]) -> str:
         """Select a guess using Monte Carlo Tree Search.
 
@@ -86,9 +89,6 @@ class MCTSSolver(BaseSolver):
         """
         if len(candidates) == 1:
             return candidates[0]
-        if not self.made_guess:
-            self.made_guess = True
-            return "crate"
 
         # Initialize root node with full candidate set
         root = MCTSNode(candidate_set=candidates.copy())

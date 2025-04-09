@@ -70,7 +70,9 @@ class SolverManager:
             solver = self._active_solver
 
         # Get hint from solver
-        hint = solver.select_guess(candidates)
+        hint = solver.starting_word() \
+            if not previous_guesses or len(previous_guesses) == 0 \
+            else solver.select_guess(candidates)
 
         # Handle case where hint has already been guessed
         if hint in previous_guesses:

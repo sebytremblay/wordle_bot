@@ -11,6 +11,9 @@ class GreedySolver(BaseSolver):
     def __init__(self):
         self.made_guess = False
 
+    def starting_word(self) -> str:
+        return "tares"
+
     def select_guess(self, candidates: List[str]) -> str:
         """Select a guess that maximizes expected information gain.
 
@@ -25,10 +28,7 @@ class GreedySolver(BaseSolver):
         Returns:
             The word with highest expected information gain
         """
-        if not self.made_guess:
-            self.made_guess = True
-            return "tares"
-        elif len(candidates) <= 2:
+        if len(candidates) <= 2:
             return candidates[0]
 
         best_score = float('-inf')

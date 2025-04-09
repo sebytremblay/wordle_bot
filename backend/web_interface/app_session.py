@@ -1,4 +1,5 @@
 from typing import Optional, Tuple, List
+from wordle_game.solver.base_solver import BaseSolver
 from wordle_game.wordle_game import WordleGame
 from wordle_game.solver_manager import SolverManager
 from config import MAX_GUESSES

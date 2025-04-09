@@ -23,3 +23,6 @@ class NaiveSolver(BaseSolver):
     @classmethod
     def get_name(cls) -> str:
         return "naive"
+
+    def starting_word(self) -> str:
+        return "crate"

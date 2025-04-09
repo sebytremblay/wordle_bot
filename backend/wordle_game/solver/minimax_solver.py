@@ -42,6 +42,11 @@ class MinimaxSolver(BaseSolver):
         # cache to avoid redundant computation
         self.cache = {}
 
+    def starting_word(self) -> str:
+        # handle base case -- (assuming ordered words is in order of estimates info gain)
+        # too many candidates to process efficiently, pick best word using heuristic
+        return self.ordered_words[0]
+
     def select_guess(self, candidates: List[str]) -> str:
         """Select a guess using minimax search with alpha-beta pruning.
 
@@ -51,11 +56,6 @@ class MinimaxSolver(BaseSolver):
         Returns:
             The word that minimizes the worst-case scenario
         """
-        # handle base case -- (assuming ordered words is in order of estimates info gain)
-        # too many candidates to process efficiently, pick best word using heuristic
-        if len(candidates) > 10000:
-            return self.ordered_words[0]
-
         if len(candidates) <= 2:
             return candidates[0]
 

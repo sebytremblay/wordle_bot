@@ -175,7 +175,7 @@ def mirror_game():
     # Create new game with same target word
     new_game_id = str(uuid.uuid4())
     new_session = AppSession(
-        word_list, target_word=original_session.game.target_word)
+        word_list, target_word=original_session.game_state.target_word)
     SESSIONS[new_game_id] = new_session
 
     # Initialize solver if requested
