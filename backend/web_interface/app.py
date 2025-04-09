@@ -76,7 +76,7 @@ def get_hint():
     """Get a hint from a solver with caching support."""
     game_id = request.args.get('game_id', 'default')
     solver_type = request.args.get(
-        'solver', 'naive')  # Default to naive solver
+        'solver', config.DEFAULT_SOLVER)
 
     session = SESSIONS.get(game_id)
     if not session:
@@ -133,12 +133,12 @@ def list_solvers():
                 'description': 'Uses information gain to select optimal guesses'
             },
             {
-                'id': 'minimax',
+                'id': f'minimax_{config.MINIMAX_DEPTH}',
                 'name': 'Minimax Solver',
                 'description': 'Uses alpha-beta pruning to minimize worst-case scenarios'
             },
             {
-                'id': 'mcts',
+                'id': f'mcts_{config.MCTS_SIMULATIONS}',
                 'name': 'MCTS Solver',
                 'description': 'Uses Monte Carlo Tree Search for probabilistic optimization'
             }

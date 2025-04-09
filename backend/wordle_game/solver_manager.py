@@ -46,7 +46,7 @@ class SolverManager:
 
         return self._solvers[solver_type]
 
-    def get_hint(self, candidates: List[str], previous_guesses: set[str], solver_type: Optional[str] = None) -> Tuple[str, str, int]:
+    def get_hint(self, candidates: List[str], previous_guesses: set[str], solver_type: Optional[str] = None, first_guess: bool = False) -> Tuple[str, str, int]:
         """Get a hint using the specified or active solver.
 
         Args:
@@ -71,7 +71,7 @@ class SolverManager:
 
         # Get hint from solver
         hint = solver.starting_word() \
-            if not previous_guesses or len(previous_guesses) == 0 \
+            if first_guess \
             else solver.select_guess(candidates)
 
         # Handle case where hint has already been guessed
