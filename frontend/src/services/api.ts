@@ -3,7 +3,7 @@ import { SolverInfo, HintResponse } from '../types/hint';
 import { logger } from '../utils/logger';
 import { SolversResponse } from '../types/solvers';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 export class ApiError extends Error {
     constructor(
@@ -51,7 +51,7 @@ async function makeRequest<T>(
     }
 }
 
-export const startNewGame = async (solver?: string): Promise<{ game_id: string; state: GameState }> => {
+export const startNewGame = async (solver?: string): Promise<NewGameResponse> => {
     const response = await fetch(`${API_BASE_URL}/newgame`, {
         method: 'POST',
         headers: {
@@ -68,7 +68,7 @@ export const startNewGame = async (solver?: string): Promise<{ game_id: string; 
     return response.json();
 };
 
-export const startMirrorGame = async (gameId: string, solver?: string): Promise<{ game_id: string; state: GameState }> => {
+export const startMirrorGame = async (gameId: string, solver?: string): Promise<NewGameResponse> => {
     const response = await fetch(`${API_BASE_URL}/mirrorgame`, {
         method: 'POST',
         headers: {
