@@ -96,10 +96,10 @@ const PlayAgainstSolverPage: React.FC = () => {
                 setSelectedSolver(solversResponse.solvers[0]?.id || '');
 
                 const playerGame = await startNewGame();
-                setPlayerGameState(playerGame.state);
+                setPlayerGameState(playerGame);
 
                 const solverGame = await startMirrorGame(playerGame.game_id, solversResponse.solvers[0]?.id);
-                setSolverGameState(solverGame.state);
+                setSolverGameState(solverGame);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to initialize games');
             }
@@ -134,10 +134,10 @@ const PlayAgainstSolverPage: React.FC = () => {
         try {
             setIsLoading(true);
             const playerGame = await startNewGame();
-            setPlayerGameState(playerGame.state);
+            setPlayerGameState(playerGame);
 
             const solverGame = await startMirrorGame(playerGame.game_id, selectedSolver);
-            setSolverGameState(solverGame.state);
+            setSolverGameState(solverGame);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to start new game');
         } finally {
