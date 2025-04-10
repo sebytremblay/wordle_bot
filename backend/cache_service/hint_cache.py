@@ -132,6 +132,10 @@ class HintCache:
         Raises:
             HintCacheError: If there's an error with the cache operations
         """
+        # Do not cache naive solver
+        if solver_type == 'naive':
+            return compute_fn(), False
+
         try:
             # Try to get cached hint
             cached = HintCache.get_cached_hint(game_state, solver_type)
