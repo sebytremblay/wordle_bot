@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import Dict
 import config
+import json
 
 from web_interface.app_session import AppSession
 from wordle_game.dictionary import load_dictionary
@@ -76,8 +77,15 @@ def make_guess():
 def get_hint():
     """Get a hint from a solver with caching support."""
     game_id = request.args.get('game_id', 'default')
-    solver_type = request.args.get(
-        'solver', config.DEFAULT_SOLVER)
+    solver_type = request.args.get('solver', config.DEFAULT_SOLVER)
+    solver_params = request.args.get('solver_params', None)
+
+    # Parse solver parameters if provided
+    if solver_params:
+        try:
+            solver_params = json.loads(solver_params)
+        except json.JSONDecodeError:
+            return jsonify({'error': 'Invalid solver parameters format'}), 400
 
     session = SESSIONS.get(game_id)
     if not session:
@@ -91,7 +99,7 @@ def get_hint():
 
         # Define hint computation function
         def compute_hint():
-            hint, _, _ = session.get_hint(solver_type)
+            hint, _, _ = session.get_hint(solver_type, solver_params)
             return hint
 
         # Try to get cached hint or compute new one

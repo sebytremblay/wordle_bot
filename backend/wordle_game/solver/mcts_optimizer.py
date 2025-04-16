@@ -31,10 +31,13 @@ class MCTSSolverOptimizer:
             'reward_multiplier': trial.suggest_float('reward_multiplier', 0.1, 5.0)
         }
 
+        # Set guesses to high number to ensure all games are played to end
+        max_guesses = 500
+
         # Test solver on each word
         total_guesses = 0
         for target_word in test_subset:
-            game = WordleGame(dictionary, config.MAX_GUESSES, target_word)
+            game = WordleGame(dictionary, max_guesses, target_word)
             solver = solver_manager.get_solver(
                 f'mcts_{config.MCTS_SIMULATIONS}', params)  # string key used only for identification, parameter loaded from params
 
@@ -71,8 +74,8 @@ class MCTSSolverOptimizer:
         test_words = load_dictionary(config.WORDLE_ANS_PATH)
 
         # Create testing subset
-        test_subset = random.sample(test_words, min(
-            n_test_games, len(test_words)), seed=config.RANDOM_SEED)
+        random.seed(config.RANDOM_SEED)
+        test_subset = random.sample(test_words, n_test_games)
 
         # Create study object
         study = optuna.create_study(

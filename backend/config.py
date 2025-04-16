@@ -14,23 +14,25 @@ ORDERED_WORDS_PATH = os.path.join(
 WORDLE_ANS_PATH = os.path.join(
     BASE_DIR, os.getenv('WORDLE_ANS_PATH', 'data/wordle_answers.txt'))
 
-# Game settings
-MAX_GUESSES = int(os.getenv('MAX_GUESSES', '6'))
-WORD_LENGTH = int(os.getenv('WORD_LENGTH', '5'))
-
 # Web server settings
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', '3001'))
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-# Solver settings
-DEFAULT_SOLVER = os.getenv('DEFAULT_SOLVER', 'naive')
-MCTS_SIMULATIONS = int(os.getenv('MCTS_SIMULATIONS', '50'))
-MINIMAX_DEPTH = int(os.getenv('MINIMAX_DEPTH', '2'))
-
 # Supabase settings
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
+# Game settings
+MAX_GUESSES = 6
+WORD_LENGTH = 5
+
+# Solver settings
+DEFAULT_SOLVER = 'greedy'
+MCTS_SIMULATIONS = 50
+MCTS_REWARD_MULTIPLIER = 1.0
+MCTS_EXPLORATION_CONSTANT = 1.0
+MINIMAX_DEPTH = 2
 
 # Random seed
 RANDOM_SEED = 42

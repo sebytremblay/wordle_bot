@@ -30,7 +30,7 @@ class Node:
 class MinimaxSolver(BaseSolver):
     """A solver that uses minimax with alpha-beta pruning to minimize worst-case scenarios."""
 
-    def __init__(self, words: List[str], ordered_words: List[str]):
+    def __init__(self, words: List[str], ordered_words: List[str], max_depth: int = config.MINIMAX_DEPTH):
         """Initialize the solver.
 
         Args:
@@ -38,7 +38,7 @@ class MinimaxSolver(BaseSolver):
             ordered_words: List of valid 5-letter words (ordered by heuristic to improve alpha beta pruning)
         """
         self.ordered_words = [word for word in ordered_words if word in words]
-        self.max_depth = config.MINIMAX_DEPTH
+        self.max_depth = max_depth
         # cache to avoid redundant computation
         self.cache = {}
 

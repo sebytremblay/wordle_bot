@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 from wordle_game.solver.base_solver import BaseSolver
 from wordle_game.wordle_game import WordleGame
 from wordle_game.solver_manager import SolverManager
@@ -27,11 +27,12 @@ class AppSession:
         """Submit a guess to the game."""
         return self.game_state.submit_guess(guess)
 
-    def get_hint(self, solver_type: Optional[str] = None) -> Tuple[str, str, int]:
+    def get_hint(self, solver_type: Optional[str] = None, solver_params: Optional[Dict[str, Any]] = None) -> Tuple[str, str, int]:
         """Get a hint using the specified or active solver.
 
         Args:
             solver_type: Optional solver type to use. If None, uses active solver.
+            solver_params: Optional parameters for the solver
 
         Returns:
             Tuple containing:
@@ -48,16 +49,15 @@ class AppSession:
             candidates=candidates,
             previous_guesses=previous_guesses,
             solver_type=solver_type,
-            first_guess=len(previous_guesses) == 0
+            first_guess=len(previous_guesses) == 0,
+            solver_params=solver_params
         )
 
         return hint, solver_type_used, candidates_remaining
 
     def get_game_state(self) -> dict:
         """Get the current game state."""
-        game_state=self.game_state.get_game_state()
-
-        return game_state
+        return self.game_state.get_game_state()
 
     def is_game_over(self) -> bool:
         """Check if the game is over."""

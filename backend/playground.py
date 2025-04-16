@@ -9,7 +9,8 @@ import time
 import sys
 from collections import defaultdict
 import statistics
-from typing import Type, List
+from typing import Type, List, Optional, Dict, Any
+import math
 
 from wordle_game.solver.base_solver import BaseSolver
 import config
@@ -120,18 +121,29 @@ def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: st
     return win_within_6, total_guesses, guess_list
 
 
-def test_solver(solver_manager: SolverManager, solver_class: Type[BaseSolver], dictionary: List[str], test_words: List[str], print_hard_words: bool = True):
-    """Test a solver on multiple words and report results."""
+def test_solver(solver_manager: SolverManager, solver_class: Type[BaseSolver], dictionary: List[str], test_words: List[str], solver_params: Optional[Dict[str, Any]] = None, print_hard_words: bool = True):
+    """Test a solver on multiple words and report results.
+
+    Args:
+        solver_manager: SolverManager instance
+        solver_class: The solver class to test
+        dictionary: List of valid words
+        test_words: List of words to test against
+        solver_params: Optional parameters for the solver
+        print_hard_words: Whether to print words that took many guesses
+    """
     # Add caching for GreedySolver
     if solver_class == GreedySolver:
         add_caching_to_greedy()
 
     try:
         solver = solver_manager.create_solver(
-            solver_class, dictionary)
+            solver_class, dictionary, solver_params)
         solver_name = solver.get_name()
 
         print(f"Testing {solver_name} solver...")
+        if solver_params:
+            print("Parameters:", solver_params)
 
         total_guesses = 0
         wins_within_6 = 0
@@ -192,7 +204,8 @@ def test_solver(solver_manager: SolverManager, solver_class: Type[BaseSolver], d
             "win_rate": win_rate,
             "avg_guesses": avg_guesses,
             "median_guesses": median_guesses,
-            "time_taken": time_taken
+            "time_taken": time_taken,
+            "parameters": solver_params
         }
 
     finally:
@@ -241,25 +254,31 @@ def main():
         "5": [NaiveSolver]
     }
 
-    mcts_depths = [50]
-    original_mcts_simulations = config.MCTS_SIMULATIONS
+    # Define solver parameters
+    solver_params = {
+        NaiveSolver: None,
+        GreedySolver: None,
+        MinimaxSolver: {'max_depth': config.MINIMAX_DEPTH},
+        MCTSSolver: {
+            'simulations': config.MCTS_SIMULATIONS,
+            'exploration_constant': math.sqrt(2),
+            'reward_multiplier': 1.0
+        }
+    }
 
     solvers = solver_map.get(choice, solver_map["1"])
     solver_manager = SolverManager(dictionary)
     results = []
-    for solver_class in solvers:
-        if solver_class == MCTSSolver:
-            for depth in mcts_depths:
-                config.MCTS_SIMULATIONS = depth
-                result = test_solver(solver_manager, solver_class,
-                                     dictionary, test_words)
-                results.append(result)
-        else:
-            result = test_solver(solver_manager, solver_class,
-                                 dictionary, test_words)
-            results.append(result)
 
-    config.MCTS_SIMULATIONS = original_mcts_simulations
+    for solver_class in solvers:
+        result = test_solver(
+            solver_manager,
+            solver_class,
+            dictionary,
+            test_words,
+            solver_params[solver_class]
+        )
+        results.append(result)
 
     if len(results) > 1:
         print("\n" + "="*60)
@@ -273,6 +292,9 @@ def main():
             f"{'Solver':<10} {'Win Rate (≤6)':<15} {'Avg Guesses':<15} {'Median':<10} {'Time (s)':<10}")
         for r in sorted_results:
             print(f"{r['solver']:<10} {r['win_rate']:.1f}%{' ':9} {r['avg_guesses']:.2f}{' ':10} {r['median_guesses']:<10} {r['time_taken']:.2f}")
+            if r['parameters']:
+                print(f"\nParameters: {r['parameters']}")
+            print("-"*60)
 
 
 if __name__ == "__main__":
