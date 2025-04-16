@@ -47,33 +47,41 @@ class MCTSNode:
         self.visits += 1
         self.value += result
 
-    def get_ucb(self, exploration: float = math.sqrt(2)) -> float:
+    def get_ucb(self, exploration_constant: float) -> float:
         """Get the UCB1 value for this node.
 
         Args:
-            exploration: The exploration parameter
+            exploration_constant: Controls exploration vs exploitation tradeoff
 
         Returns:
             The UCB1 value for this node
         """
         if self.visits == 0:
             return float('inf')
-        return (self.value / self.visits) + exploration * math.sqrt(math.log(self.parent.visits) / self.visits)
+        return (self.value / self.visits) + exploration_constant * math.sqrt(math.log(self.parent.visits) / self.visits)
 
 
 class MCTSSolver(BaseSolver):
     """A solver that uses Monte Carlo Tree Search for probabilistic optimization."""
 
-    def __init__(self, dictionary_words: List[str], ordered_words: List[str], simulations: int = config.MCTS_SIMULATIONS):
+    def __init__(self, dictionary_words: List[str], ordered_words: List[str],
+                 simulations: int = config.MCTS_SIMULATIONS,
+                 exploration_constant: float = math.sqrt(2),
+                 reward_multiplier: float = 1.0):
         """Initialize the solver.
 
         Args:
             dictionary_words: List of valid 5-letter words
+            ordered_words: List of words ordered by heuristic value
             simulations: Number of MCTS simulations to run
+            exploration_constant: Controls exploration vs exploitation in UCB1
+            reward_multiplier: Scales the reward values
         """
         self.dictionary = dictionary_words
         self.simulations = simulations
         self.ordered_words = ordered_words
+        self.exploration_constant = exploration_constant
+        self.reward_multiplier = reward_multiplier
 
     def starting_word(self) -> str:
         return "crate"
@@ -138,7 +146,8 @@ class MCTSSolver(BaseSolver):
         Returns:
             The child node with the highest UCB1 value
         """
-        return max(node.children.values(), key=lambda child: child.get_ucb())
+        return max(node.children.values(),
+                   key=lambda child: child.get_ucb(self.exploration_constant))
 
     def _simulate(self, candidates: List[str], target_word: str, curr_guesses: int = 0) -> float:
         """Run a random simulation from the current node.
@@ -153,7 +162,6 @@ class MCTSSolver(BaseSolver):
         """
         if not candidates:
             return 0.0
-        reward_multiplier = 1
 
         # Adjust remaining guesses to account for moves already made
         remaining_guesses = config.MAX_GUESSES - curr_guesses
@@ -165,14 +173,14 @@ class MCTSSolver(BaseSolver):
         while not simulation.is_game_over():
             guess = self._rollout(simulation.candidate_words)
             if guess is None:
-                return -1 * reward_multiplier
+                return -1 * self.reward_multiplier
 
             simulation.submit_guess(guess)
 
         # Compute the reward based on remaining guesses if the game is won
         reward = (1 - simulation.guess_count /
                   simulation.max_guesses) if simulation.game_won else 0
-        return reward * reward_multiplier
+        return reward * self.reward_multiplier
 
     def _rollout(self, candidates: List[str]) -> Optional[str]:
         """Return the best guess from the remaining candidates in the sorted word list.

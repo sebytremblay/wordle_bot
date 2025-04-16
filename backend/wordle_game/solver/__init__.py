@@ -7,11 +7,12 @@ from .naive_solver import NaiveSolver
 from .greedy_solver import GreedySolver
 from .minimax_solver import MinimaxSolver
 from .mcts_solver import MCTSSolver
-
+from .mcts_optimizer import MCTSSolverOptimizer
 __all__ = [
     'BaseSolver',
     'NaiveSolver',
     'GreedySolver',
     'MinimaxSolver',
-    'MCTSSolver'
+    'MCTSSolver',
+    'MCTSSolverOptimizer'
 ]

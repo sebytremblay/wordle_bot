@@ -31,3 +31,6 @@ MINIMAX_DEPTH = int(os.getenv('MINIMAX_DEPTH', '2'))
 # Supabase settings
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
+# Random seed
+RANDOM_SEED = 42

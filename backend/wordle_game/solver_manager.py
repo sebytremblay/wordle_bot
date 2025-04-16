@@ -8,6 +8,7 @@ from .solver import (
     MinimaxSolver,
     MCTSSolver
 )
+import math
 
 
 class SolverManager:
@@ -26,33 +27,43 @@ class SolverManager:
             if config.ORDERED_WORDS_PATH \
             else MinimaxSolver._estimate_feedback_spread(self.dictionary)
 
-    def get_solver(self, solver_type: str) -> BaseSolver:
+    def get_solver(self, solver_type: str, mcts_params: Optional[Dict[str, float]] = None) -> BaseSolver:
         """Get or create a solver of the specified type.
 
         Args:
             solver_type: Type of solver to get/create
+            mcts_params: Optional parameters for MCTS solver:
+                - simulations: Number of simulations
+                - exploration_constant: UCB1 exploration parameter
+                - reward_multiplier: Reward scaling factor
 
         Returns:
             The requested solver instance
         """
         solver_type = solver_type.lower()
 
-        # Create solver if it doesn't exist
-        if solver_type not in self._solvers:
+        # Create solver if it doesn't exist or if MCTS with new params
+        solver_key = solver_type
+        if mcts_params and 'mcts' in solver_type:
+            solver_key = f"{solver_type}_{hash(frozenset(mcts_params.items()))}"
+
+        if solver_key not in self._solvers:
             solver_class = self._get_solver_class(solver_type)
             solver = self.create_solver(
-                solver_class, self.dictionary)
-            self._solvers[solver_type] = solver
+                solver_class, self.dictionary, mcts_params)
+            self._solvers[solver_key] = solver
 
-        return self._solvers[solver_type]
+        return self._solvers[solver_key]
 
-    def get_hint(self, candidates: List[str], previous_guesses: set[str], solver_type: Optional[str] = None, first_guess: bool = False) -> Tuple[str, str, int]:
+    def get_hint(self, candidates: List[str], previous_guesses: set[str], solver_type: Optional[str] = None, first_guess: bool = False, mcts_params: Optional[Dict[str, float]] = None) -> Tuple[str, str, int]:
         """Get a hint using the specified or active solver.
 
         Args:
             candidates: List of remaining candidate words
             previous_guesses: Set of previously guessed words
             solver_type: Optional solver type to use. If None, uses active solver.
+            first_guess: Whether this is the first guess
+            mcts_params: Optional parameters for MCTS solver
 
         Returns:
             Tuple containing:
@@ -62,7 +73,7 @@ class SolverManager:
         """
         # Use specified solver or current active solver
         if solver_type:
-            solver = self.get_solver(solver_type)
+            solver = self.get_solver(solver_type, mcts_params)
             self._active_solver = solver
         else:
             if not self._active_solver:
@@ -107,11 +118,30 @@ class SolverManager:
 
         return solver_class
 
-    def create_solver(self, solver_class: Type[BaseSolver], dictionary: List[str]) -> BaseSolver:
-        """Create a new solver instance with appropriate parameters."""
+    def create_solver(self, solver_class: Type[BaseSolver], dictionary: List[str], mcts_params: Optional[Dict[str, float]] = None) -> BaseSolver:
+        """Create a new solver instance with appropriate parameters.
+
+        Args:
+            solver_class: The solver class to instantiate
+            dictionary: List of valid words
+            mcts_params: Optional parameters for MCTS solver:
+                - simulations: Number of simulations
+                - exploration_constant: UCB1 exploration parameter
+                - reward_multiplier: Reward scaling factor
+        """
         if solver_class == MinimaxSolver:
             return solver_class(dictionary, self.ordered_words)
         elif solver_class == MCTSSolver:
-            return solver_class(dictionary, self.ordered_words, simulations=config.MCTS_SIMULATIONS)
+            if mcts_params is None:
+                mcts_params = {}
+            return solver_class(
+                dictionary,
+                self.ordered_words,
+                simulations=mcts_params.get(
+                    'simulations', config.MCTS_SIMULATIONS),
+                exploration_constant=mcts_params.get(
+                    'exploration_constant', math.sqrt(2)),
+                reward_multiplier=mcts_params.get('reward_multiplier', 1.0)
+            )
         else:
             return solver_class()
