@@ -26,9 +26,9 @@ class MCTSSolverOptimizer:
         """
         # Sample hyperparameters
         params = {
-            'simulations': trial.suggest_int('simulations', 10, 200),
-            'exploration_constant': trial.suggest_float('exploration_constant', 0.1, 3.0),
-            'reward_multiplier': trial.suggest_float('reward_multiplier', 0.1, 5.0)
+            'simulations': trial.suggest_int('simulations', 10, 250),
+            'exploration_constant': trial.suggest_float('exploration_constant', 0.01, 10.0),
+            'reward_multiplier': trial.suggest_float('reward_multiplier', 0.01, 100.0)
         }
 
         # Set guesses to high number to ensure all games are played to end
@@ -57,7 +57,7 @@ class MCTSSolverOptimizer:
 
         return avg_guesses
 
-    def optimize_mcts_parameters(self, n_trials: int = 50, n_test_games: int = 50) -> Dict[str, Any]:
+    def optimize_mcts_parameters(self, n_trials: int = 50, n_test_games: int = 100) -> Dict[str, Any]:
         """Run hyperparameter optimization for MCTS solver.
 
         Args:
@@ -103,4 +103,4 @@ class MCTSSolverOptimizer:
 
 if __name__ == "__main__":
     optimizer = MCTSSolverOptimizer()
-    optimizer.optimize_mcts_parameters()
+    print(optimizer.optimize_mcts_parameters())

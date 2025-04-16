@@ -261,8 +261,8 @@ def main():
         MinimaxSolver: {'max_depth': config.MINIMAX_DEPTH},
         MCTSSolver: {
             'simulations': config.MCTS_SIMULATIONS,
-            'exploration_constant': math.sqrt(2),
-            'reward_multiplier': 1.0
+            'exploration_constant': config.MCTS_EXPLORATION_CONSTANT,
+            'reward_multiplier': config.MCTS_REWARD_MULTIPLIER
         }
     }
 

@@ -66,8 +66,8 @@ class MCTSSolver(BaseSolver):
 
     def __init__(self, dictionary_words: List[str], ordered_words: List[str],
                  simulations: int = config.MCTS_SIMULATIONS,
-                 exploration_constant: float = math.sqrt(2),
-                 reward_multiplier: float = 1.0):
+                 exploration_constant: float = config.MCTS_EXPLORATION_CONSTANT,
+                 reward_multiplier: float = config.MCTS_REWARD_MULTIPLIER):
         """Initialize the solver.
 
         Args:
