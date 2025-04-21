@@ -6,9 +6,9 @@ An intelligent Wordle solver system that implements multiple search algorithms t
 
 - Multiple solver implementations:
   - Naive Solver: Random selection from filtered candidates
-  - Greedy Solver: Information gain-based selection (coming soon)
-  - Minimax Solver: Alpha-beta pruning for worst-case optimization (coming soon)
-  - MCTS Solver: Monte Carlo Tree Search for probabilistic optimization (coming soon)
+  - Greedy Solver: Information gain-based selection
+  - Minimax Solver: Alpha-beta pruning for worst-case optimization
+  - MCTS Solver: Monte Carlo Tree Search for probabilistic optimization
 - Web API for game interaction
 - Detailed feedback processing and candidate filtering
 - Support for custom word dictionaries
