@@ -91,16 +91,7 @@ def run_game_no_limit(solver: BaseSolver, dictionary: List[str], target_word: st
     guess_list = []
 
     while not found_word:
-        try:
-            # Try to use cache
-            guess, _ = HintCache.get_or_compute_hint(
-                game_state=session.get_game_state(),
-                solver_type=solver.get_name(),
-                compute_fn=compute_hint
-            )
-        except Exception as e:
-            # If cache fails, compute directly
-            guess = compute_hint()
+        guess = compute_hint()
 
         guess_list.append(guess)
 

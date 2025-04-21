@@ -57,7 +57,7 @@ class WordleGame:
         # Update candidate words based on feedback
         self.candidate_words = list(filter_candidates(
             tuple(self.candidate_words), guess, feedback))
-
+        
         # Check if game is won
         self.game_won = (guess == self.target_word)
 
