@@ -1,5 +1,9 @@
 """
 Main entry point for the Wordle solver application.
+
+This file is intended for LOCAL DEVELOPMENT ONLY.
+For production, use Gunicorn with:
+    gunicorn  --bind $HOST:$PORT web_interface.app:app
 """
 
 import os

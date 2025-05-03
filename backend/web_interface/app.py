@@ -206,7 +206,3 @@ def mirror_game():
         'solver_type': solver_type,
         'state': new_session.get_game_state()
     })
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
