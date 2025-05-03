@@ -17,8 +17,8 @@ const NavBar: React.FC = () => {
                 <NavLink to="/about" $active={location.pathname === '/about'}>
                     About the Solvers
                 </NavLink>
-                <NavLink to="/research-paper" $active={location.pathname === '/research-paper'}>
-                    Research Paper
+                <NavLink to="/results" $active={location.pathname === '/results'}>
+                    Results
                 </NavLink>
             </NavContent>
         </NavContainer>

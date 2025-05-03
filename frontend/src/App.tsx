@@ -5,7 +5,7 @@ import NavBar from './components/NavBar';
 import HomePage from './pages/HomePage';
 import PlayAgainstSolverPage from './pages/PlayAgainstSolverPage';
 import AboutPage from './pages/AboutPage';
-import ResearchPaperPage from './pages/ResearchPaperPage';
+import ResultsPage from './pages/ResultsPage';
 
 const AppContainer = styled.div`
     min-height: 100vh;
@@ -21,7 +21,7 @@ const App: React.FC = () => {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/play-against-solver" element={<PlayAgainstSolverPage />} />
                     <Route path="/about" element={<AboutPage />} />
-                    <Route path="/research-paper" element={<ResearchPaperPage />} />
+                    <Route path="/results" element={<ResultsPage />} />
                 </Routes>
             </AppContainer>
         </Router>
