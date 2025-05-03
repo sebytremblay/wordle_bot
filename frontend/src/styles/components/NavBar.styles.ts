@@ -1,6 +1,9 @@
 import styled from '@emotion/styled';
 import { Link } from 'react-router-dom';
 import { theme } from '../theme';
+import isPropValid from '@emotion/is-prop-valid';
+
+const customShouldForwardProp = (prop: string) => isPropValid(prop) && prop !== '$active';
 
 export const NavContainer = styled.nav`
     position: fixed;
@@ -21,7 +24,7 @@ export const NavContent = styled.div`
     align-items: center;
 `;
 
-export const NavLink = styled(Link) <{ $active: boolean }>`
+export const NavLink = styled(Link, { shouldForwardProp: customShouldForwardProp }) <{ $active: boolean }>`
     color: ${props => props.$active ? theme.colors.primary : theme.colors.text.primary};
     text-decoration: none;
     font-weight: ${props => props.$active ? 'bold' : 'normal'};
