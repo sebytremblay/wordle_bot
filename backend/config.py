@@ -18,6 +18,7 @@ WORDLE_ANS_PATH = os.path.join(
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', '3001'))
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
 # Supabase settings
 SUPABASE_URL = os.getenv('SUPABASE_URL')

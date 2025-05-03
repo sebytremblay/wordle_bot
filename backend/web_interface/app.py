@@ -12,7 +12,7 @@ from cache_service.hint_cache import HintCache, SupabaseConnectionError, HintCac
 app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:3000"],  # React development server
+        "origins": [config.FRONTEND_URL],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
@@ -23,6 +23,11 @@ SESSIONS: Dict[str, AppSession] = {}
 
 # Load dictionary
 word_list = load_dictionary(config.DICTIONARY_PATH)
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
 
 
 @app.route('/newgame', methods=['POST'])
