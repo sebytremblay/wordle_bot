@@ -8,6 +8,8 @@ import SolverSelect from '../components/PlayAgainstSolverPage/SolverSelect';
 import WordListCounter from '../components/WordListCounter';
 import { startNewGame, getSolvers, startMirrorGame, getHint, submitGuess } from '../services/api';
 import { GameState } from '../types/game';
+import { toast } from 'react-toastify';
+import { useColdStartToast } from '../hooks/useColdStartToast';
 
 const Container = styled.div`
     max-width: 800px;
@@ -120,8 +122,9 @@ const PlayAgainstSolverPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
+    const runWithColdStartToast = useColdStartToast();
     useEffect(() => {
-        const initGame = async () => {
+        runWithColdStartToast(async () => {
             try {
                 const solversResponse = await getSolvers();
                 setSelectedSolver(solversResponse.solvers[0]?.id || '');
@@ -134,24 +137,25 @@ const PlayAgainstSolverPage: React.FC = () => {
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to start game');
             }
-        };
-
-        initGame();
+        });
+        // eslint-disable-next-line
     }, []);
 
     const handleNewGame = async () => {
-        try {
-            setIsLoading(true);
-            const playerGame = await startNewGame();
-            setPlayerGameState(playerGame);
+        runWithColdStartToast(async () => {
+            try {
+                setIsLoading(true);
+                const playerGame = await startNewGame();
+                setPlayerGameState(playerGame);
 
-            const solverGame = await startMirrorGame(playerGame.game_id, selectedSolver);
-            setSolverGameState(solverGame);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to start new game');
-        } finally {
-            setIsLoading(false);
-        }
+                const solverGame = await startMirrorGame(playerGame.game_id, selectedSolver);
+                setSolverGameState(solverGame);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to start new game');
+            } finally {
+                setIsLoading(false);
+            }
+        });
     };
 
     if (error) {

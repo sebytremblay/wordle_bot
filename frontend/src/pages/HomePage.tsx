@@ -8,6 +8,8 @@ import HintPanel from '../components/HomePage/HintPanel';
 import WordListCounter from '../components/WordListCounter';
 import { startNewGame } from '../services/api';
 import { GameState } from '../types/game';
+import { toast } from 'react-toastify';
+import { useColdStartToast } from '../hooks/useColdStartToast';
 
 const Container = styled.div`
     max-width: 800px;
@@ -64,20 +66,18 @@ const NewGameButton = styled.button`
 const HomePage: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const title = 'WORDLE SOLVER';
-    const subtitle = 'Play Wordle with AI assistance! Enter your guesses or get hints from different solving strategies. The colored feedback shows how close your guess was: green for correct position, yellow for correct letter in wrong position.';
+    const runWithColdStartToast = useColdStartToast();
 
     useEffect(() => {
-        const initGame = async () => {
+        runWithColdStartToast(async () => {
             try {
                 const response = await startNewGame();
                 setGameState(response);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to start game');
             }
-        };
-
-        initGame();
+        });
+        // eslint-disable-next-line
     }, []);
 
     if (error) {
@@ -130,12 +130,14 @@ const HomePage: React.FC = () => {
                             {gameState.state.game_won ? 'Congratulations!' : 'Game Over!'}
                         </GameOverMessage>
                         <NewGameButton onClick={async () => {
-                            try {
-                                const response = await startNewGame();
-                                setGameState(response);
-                            } catch (err) {
-                                setError(err instanceof Error ? err.message : 'Failed to start new game');
-                            }
+                            runWithColdStartToast(async () => {
+                                try {
+                                    const response = await startNewGame();
+                                    setGameState(response);
+                                } catch (err) {
+                                    setError(err instanceof Error ? err.message : 'Failed to start new game');
+                                }
+                            });
                         }}>
                             New Game
                         </NewGameButton>

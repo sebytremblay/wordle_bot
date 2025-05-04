@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage';
 import PlayAgainstSolverPage from './pages/PlayAgainstSolverPage';
 import AboutPage from './pages/AboutPage';
 import ResultsPage from './pages/ResultsPage';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AppContainer = styled.div`
     min-height: 100vh;
@@ -23,6 +25,17 @@ const App: React.FC = () => {
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/results" element={<ResultsPage />} />
                 </Routes>
+                <ToastContainer
+                    position="top-center"
+                    autoClose={10000}
+                    hideProgressBar={false}
+                    newestOnTop={false}
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    theme="colored"
+                />
             </AppContainer>
         </Router>
     );
